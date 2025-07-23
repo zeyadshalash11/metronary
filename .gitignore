@@ -1,0 +1,4 @@
+.env
+api.env
+paymob_api.env
+*.env

@@ -1,0 +1,106 @@
+{% include 'header.html' %}
+
+{% block title %}Size Guide | Metro Nary{% endblock %}
+{% block meta_description %}Check our size guide to make sure your Metro Nary gear fits perfectly.{% endblock %}
+{% block og_title %}Metro Nary Size Guide{% endblock %}
+{% block og_description %}Measurements for tops, bottoms, and more — get your perfect fit.{% endblock %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Size Guide | Metro Nary</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            padding-top: 80px;
+            /* Space for the header */
+            margin: 0;
+            text-align: center;
+            display: flex;
+            /* Use flexbox to push footer down */
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .size-guide-container {
+            flex: 1;
+            /* Allows container to grow and push footer down */
+            max-width: 800px;
+            /* Max width for desktop */
+            margin: auto;
+            padding: 40px 20px;
+            /* Padding on sides */
+            box-sizing: border-box;
+            /* Include padding in width calculation */
+        }
+
+        .size-guide-container img {
+            width: 100%;
+            /* CRUCIAL FIX: Image takes 100% of its container's width */
+            max-width: 700px;
+            /* Max width for desktop (it won't exceed this on larger screens) */
+            height: auto;
+            /* Maintain aspect ratio */
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        h1 {
+            color: red;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        /* --- Mobile Specific Adjustments --- */
+        @media (max-width: 768px) {
+            .size-guide-container {
+                padding: 20px 15px;
+                /* Reduce padding on smaller screens */
+            }
+
+            .size-guide-container img {
+                max-width: 95%;
+                /* Make image take up to 95% of its container on mobile */
+                /* This ensures it shrinks down and has a little space on the sides */
+            }
+
+            h1 {
+                font-size: 24px;
+                /* Slightly smaller heading on mobile */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .size-guide-container {
+                padding: 15px 10px;
+                /* Further reduce padding on very small screens */
+            }
+
+            h1 {
+                font-size: 22px;
+                /* Even smaller heading for very small phones */
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="size-guide-container">
+        <h1>Size Guide</h1>
+        {# REMOVED: <p>Find the perfect fit for your style. This chart helps you compare our sizes easily.</p> #}
+        <img src="{{ url_for('static', filename='size-chart.png') }}" alt="Size Chart">
+    </div>
+
+    {% include 'footer.html' %}
+</body>
+
+</html>

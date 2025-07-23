@@ -1,0 +1,725 @@
+{% include 'header.html' %}
+
+{% if error %}
+<div id="messageBoxInitial"
+    style="background-color: #111; color: red; border: 1px solid red; padding: 12px; margin: 20px auto; max-width: 700px; text-align: center; box-shadow: 0 0 8px red; font-family: 'Rajdhani', sans-serif;">
+    {{ error }}
+</div>
+{% endif %}
+
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Checkout | Metro Nary</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            padding-top: 80px;
+            margin: 0;
+        }
+
+        .checkout-container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .section {
+            border: 1px solid red;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px red;
+        }
+
+        .section h2 {
+            margin-top: 0;
+            color: red;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #444;
+            background: #111;
+            color: white;
+            border-radius: 4px;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 14px;
+            color: white;
+        }
+
+        .cart-item {
+            border-top: 1px solid rgba(255, 0, 0, 0.3);
+            padding: 10px 0;
+        }
+
+        .cart-item p {
+            margin: 4px 0;
+        }
+
+        /* Styles for payment method selection */
+        .payment-method-selection {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .payment-option-radio {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 0;
+        }
+
+        .payment-option-radio input[type="radio"] {
+            appearance: none;
+            border: 2px solid red;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #111;
+            color: white;
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .payment-option-radio input[type="radio"]:checked {
+            background-color: red;
+            border-color: white;
+        }
+
+        .payment-option-radio input[type="radio"]:hover {
+            background-color: #444;
+            border-color: white;
+        }
+
+        .payment-option-radio label {
+            font-size: 16px;
+            color: white;
+            padding-left: 10px;
+            font-weight: bold;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .payment-option-radio input[type="radio"]:checked+label {
+            color: white;
+        }
+
+        /* Styles for Paymob buttons */
+        .paymob-buttons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .place-order-button {
+            display: block;
+            /* Make it take full width or center it easily */
+            width: 100%;
+            /* Adjust as needed, e.g., max-width: 400px; margin: 20px auto; to center */
+            padding: 15px 30px;
+            /* Generous padding */
+            margin-top: 30px;
+            /* Space from elements above */
+            background-color: red;
+            /* Consistent with your theme */
+            color: black;
+            /* Text color */
+            border: none;
+            border-radius: 8px;
+            /* Slightly rounded corners */
+            cursor: pointer;
+            font-size: 1.2em;
+            /* Slightly larger text */
+            font-weight: bold;
+            font-family: 'Rajdhani', sans-serif;
+            /* Consistent font */
+            text-transform: uppercase;
+            /* Make it stand out */
+            letter-spacing: 1px;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            /* Smooth transitions */
+            box-shadow: 0 4px 8px rgba(255, 0, 0, 0.2);
+            /* Subtle shadow */
+        }
+
+        .place-order-button:hover {
+            background-color: darkred;
+            /* Darker red on hover */
+            transform: translateY(-3px);
+            /* Lift effect on hover */
+            box-shadow: 0 6px 12px rgba(255, 0, 0, 0.3);
+            /* Enhanced shadow on hover */
+        }
+
+        .place-order-button:active {
+            background-color: #a00;
+            /* Even darker when clicked */
+            transform: translateY(0);
+            /* Press effect */
+            box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2);
+        }
+
+        /* Optional: Style for when the button is disabled (e.g., after click) */
+        .place-order-button:disabled {
+            background-color: #555;
+            /* Grey out when disabled */
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        @media (min-width: 640px) {
+            .paymob-buttons-container {
+                flex-direction: row;
+            }
+        }
+
+        .paymob-btn {
+            background: red;
+            color: black;
+            font-weight: bold;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-family: 'Rajdhani', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .paymob-btn:hover {
+            background: darkred;
+            box-shadow: 0 0 15px red;
+        }
+
+        .paymob-btn:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Loading indicator styles */
+        .loading-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            color: #ddd;
+            font-size: 1.1rem;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 0, 0, 0.3);
+            border-top: 4px solid red;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Message Box Styling */
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .message-box.show {
+            opacity: 1;
+        }
+
+        .message-box.error {
+            background-color: #EF4444;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .message-box.success {
+            background-color: #10B981;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Utility class to hide elements */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="checkout-container">
+
+        <!-- The form for Cash on Delivery -->
+        <form id="checkoutForm" action="{{ url_for('complete_checkout') }}" method="POST">
+
+            <!-- Delivery Info -->
+            <div class="section">
+                <h2>Delivery Information</h2>
+
+                <input type="email" name="email" placeholder="Email Address" required
+                    value="{{ request.form.get('email') or user_email }}">
+
+                <input type="text" name="name" placeholder="Full Name" required
+                    value="{{ request.form.get('name') or user_name }}">
+
+                <input type="tel" name="phone" placeholder="Enter your phone" inputmode="numeric" pattern="[0-9]{8,15}"
+                    required value="{{ request.form.get('phone') or user_phone }}">
+
+                <textarea name="address" placeholder="Street Name and Area"
+                    required>{{ request.form.get('address') or user_address }}</textarea>
+
+                <label>Building Number</label>
+                <input type="text" name="building" required value="{{ request.form.get('building') or user_building }}">
+
+                <label>Floor Number</label>
+                <input type="text" name="floor" required value="{{ request.form.get('floor') or user_floor }}">
+
+                <label>Apartment Number</label>
+                <input type="text" name="apartment" required
+                    value="{{ request.form.get('apartment') or user_apartment }}">
+
+                <label>Governorate</label>
+                <select name="governorate" id="governorateSelect" required> {# ADDED ID HERE #}
+                    <option value="">Select Governorate</option>
+                    <option value="Cairo" {% if (request.form.get('governorate') or user_governorate)=='Cairo'
+                        %}selected{% endif %}>Cairo</option>
+                    <option value="Giza" {% if (request.form.get('governorate') or user_governorate)=='Giza'
+                        %}selected{% endif %}>Giza</option>
+                    <option value="Alexandria" {% if (request.form.get('governorate') or user_governorate)=='Alexandria'
+                        %}selected{% endif %}>Alexandria</option>
+                    <option value="Dakahlia" {% if (request.form.get('governorate') or user_governorate)=='Dakahlia'
+                        %}selected{% endif %}>Dakahlia</option>
+                    <option value="Sharqia" {% if (request.form.get('governorate') or user_governorate)=='Sharqia'
+                        %}selected{% endif %}>Sharqia</option>
+                    <option value="Other" {% if (request.form.get('governorate') or user_governorate)=='Other'
+                        %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+
+
+            <!-- Payment Methods -->
+            <div class="section">
+                <h2>Payment Method</h2>
+
+                <div class="payment-method-selection">
+                    <div class="payment-option-radio">
+                        <input type="radio" name="payment_method" value="cash" id="cashPayment" checked>
+                        <label for="cashPayment">Cash on Delivery</label>
+                    </div>
+
+                    <div class="payment-option-radio">
+                        <input type="radio" name="payment_method" value="online" id="onlinePayment">
+                        <label for="onlinePayment">Online Payment (Visa / Mobile Wallet)</label>
+                    </div>
+                </div>
+
+                <h6>All transactions are secure and encrypted.</h6>
+
+                <!-- Paymob Buttons and Mobile Wallet Input (Initially hidden, shown when onlinePayment radio is selected) -->
+                <div id="paymobOptions" class="paymob-buttons-container hidden">
+                    <!-- Mobile Wallet Number Input - NEW -->
+                    <div id="mobileWalletInputGroup" class="hidden" style="width: 100%;">
+                        <label for="mobileWalletNumber" style="font-size: 14px; margin-bottom: 5px;">Mobile Wallet
+                            Number (e.g., Vodafone Cash)</label>
+                        <input type="tel" name="mobile_wallet_number" id="mobileWalletNumber"
+                            placeholder="e.g., 01012345678" inputmode="numeric" pattern="[0-9]{11}" style="width: 100%;"
+                            value="{{ request.form.get('mobile_wallet_number', '') }}">
+                    </div>
+
+                    <button type="button" id="payWithCardBtn" class="paymob-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-credit-card">
+                            <rect width="20" height="14" x="2" y="5" rx="2" />
+                            <line x1="2" x2="22" y1="10" y2="10" />
+                        </svg>
+                        Pay with Card
+                    </button>
+                    <button type="button" id="payWithWalletBtn" class="paymob-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-wallet">
+                            <path
+                                d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h12a2 2 0 0 1 0 4H5a2 2 0 0 0 0 4h12a2 2 0 0 1 0 4v-3" />
+                            <path d="M22 7h-7" />
+                            <path d="M22 17h-7" />
+                        </svg>
+                        Pay with Wallet
+                    </button>
+                </div>
+
+                <!-- Loading Indicator for Paymob Payments -->
+                <div id="paymobLoadingIndicator" class="loading-indicator hidden">
+                    <div class="loading-spinner"></div>
+                    <p>Processing your payment, please wait...</p>
+                </div>
+            </div>
+
+
+            <!-- Order Summary -->
+            <div class="section">
+                <h2>Order Summary</h2>
+                {% for item in cart_items %}
+                <div class="cart-item">
+                    <p><strong>{{ item.name }}</strong> × {{ item.quantity }}</p>
+                    <p>Subtotal: EGP {{ item.price * item.quantity }}</p>
+                </div>
+                {% endfor %}
+
+                <div
+                    style="margin-top: 30px; font-family: 'Rajdhani', sans-serif; background: #111; padding: 20px; border-radius: 6px; box-shadow: 0 0 6px red; max-width: 700px; margin-inline: auto;">
+                    <p style="display: flex; justify-content: space-between; margin: 10px 0;">
+                        <span>Subtotal · {{ item_count }} items</span>
+                        <span id="subtotalAmount">E£{{ subtotal }}</span> {# ADDED ID FOR SUBTOTAL #}
+                    </p>
+                    <p style="display: flex; justify-content: space-between; margin: 10px 0;">
+                        <span>Shipping</span>
+                        <span id="shippingAmount">E£{{ shipping }}</span> {# ADDED ID HERE #}
+                    </p>
+                    <hr style="border: 0; height: 1px; background: red; margin: 20px 0;">
+                    <p style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
+                        <span>Total EGP</span>
+                        <span id="orderTotalAmount">E£{{ subtotal + shipping }}</span>
+                    </p>
+                </div>
+            </div>
+
+
+            <!-- Place Order (only for Cash on Delivery) -->
+            <div id="cashOnDeliverySubmit" style="text-align: center;">
+                <button type="submit" class="place-order-button">Place Order</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Message Box -->
+    <div id="messageBox" class="message-box"></div>
+
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const placeOrderButton = document.querySelector('.place-order-button');
+            const checkoutForm = placeOrderButton ? placeOrderButton.closest('form') : null;
+
+            if (checkoutForm) {
+                checkoutForm.addEventListener('submit', function () {
+                    if (placeOrderButton) {
+                        placeOrderButton.disabled = true; // Disable the button
+                        placeOrderButton.textContent = 'Processing...'; // Change text
+                    }
+                });
+            }
+        });
+        // Function to show a temporary message
+        function showMessage(message, type = 'info') {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = message;
+            messageBox.className = `message-box show ${type}`; // Add type class for styling
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000); // Message disappears after 3 seconds
+        }
+
+        // Get elements
+        const cashPaymentRadio = document.getElementById('cashPayment');
+        const onlinePaymentRadio = document.getElementById('onlinePayment');
+        const paymobOptionsDiv = document.getElementById('paymobOptions');
+        const cashOnDeliverySubmitDiv = document.getElementById('cashOnDeliverySubmit');
+        const payWithCardBtn = document.getElementById('payWithCardBtn');
+        const payWithWalletBtn = document.getElementById('payWithWalletBtn');
+        const paymobLoadingIndicator = document.getElementById('paymobLoadingIndicator');
+        const checkoutForm = document.getElementById('checkoutForm');
+        const orderTotalAmountSpan = document.getElementById('orderTotalAmount');
+        const mobileWalletInputGroup = document.getElementById('mobileWalletInputGroup');
+        const mobileWalletNumberInput = document.getElementById('mobileWalletNumber');
+
+        // NEW: Elements for dynamic shipping update
+        const governorateSelect = document.getElementById('governorateSelect');
+        const shippingAmountSpan = document.getElementById('shippingAmount');
+        const subtotalAmountSpan = document.getElementById('subtotalAmount'); // Get subtotal span
+
+
+        // Function to toggle payment method display
+        function togglePaymentMethodDisplay() {
+            if (onlinePaymentRadio.checked) {
+                paymobOptionsDiv.classList.remove('hidden'); // Show Paymob buttons container
+                cashOnDeliverySubmitDiv.classList.add('hidden'); // Hide "Place Order" button
+
+                mobileWalletInputGroup.classList.add('hidden');
+                mobileWalletNumberInput.removeAttribute('required');
+
+            } else {
+                paymobOptionsDiv.classList.add('hidden'); // Hide Paymob buttons container
+                mobileWalletInputGroup.classList.add('hidden'); // Hide mobile wallet input
+                mobileWalletNumberInput.removeAttribute('required');
+                cashOnDeliverySubmitDiv.classList.remove('hidden'); // Show "Place Order" button
+            }
+            paymobLoadingIndicator.classList.add('hidden');
+            payWithCardBtn.disabled = false;
+            payWithWalletBtn.disabled = false;
+        }
+
+        // NEW: Function to update shipping and total based on governorate
+        function updateShippingAndTotal() {
+            const selectedGovernorate = governorateSelect.value;
+            let currentShipping = 0;
+            if (selectedGovernorate.toLowerCase() === 'cairo') {
+                currentShipping = 70;
+            } else if (selectedGovernorate !== '') { // Only apply 120 if a valid non-Cairo governorate is selected
+                currentShipping = 120;
+            }
+            // If no governorate is selected, shipping might remain 0 or default to something else,
+            // depending on your initial requirements. For now, it will be 0 if empty.
+
+            shippingAmountSpan.textContent = `E£${currentShipping}`;
+
+            // Get current subtotal from the span
+            const subtotalText = subtotalAmountSpan.textContent.replace('E£', '');
+            const currentSubtotal = parseFloat(subtotalText);
+
+            if (!isNaN(currentSubtotal)) {
+                const newTotal = currentSubtotal + currentShipping;
+                orderTotalAmountSpan.textContent = `E£${newTotal}`;
+            } else {
+                console.error("Could not parse subtotal for dynamic update.");
+            }
+        }
+
+
+        // Add event listeners
+        cashPaymentRadio.addEventListener('change', togglePaymentMethodDisplay);
+        onlinePaymentRadio.addEventListener('change', togglePaymentMethodDisplay);
+        governorateSelect.addEventListener('change', updateShippingAndTotal); // NEW: Listen for governorate changes
+
+        // Initial calls to set correct display and totals on page load
+        togglePaymentMethodDisplay();
+        updateShippingAndTotal(); // NEW: Call on load to ensure initial shipping is correct
+
+
+        // Function to validate delivery info
+        function validateDeliveryInfo() {
+            const email = document.querySelector('input[name="email"]').value;
+            const name = document.querySelector('input[name="name"]').value;
+            const phone = document.querySelector('input[name="phone"]').value;
+            const address = document.querySelector('textarea[name="address"]').value;
+            const building = document.querySelector('input[name="building"]').value;
+            const floor = document.querySelector('input[name="floor"]').value;
+            const apartment = document.querySelector('input[name="apartment"]').value;
+            const governorate = document.querySelector('select[name="governorate"]').value;
+
+            if (!email || !name || !phone || !address || !building || !floor || !apartment || !governorate) {
+                showMessage('Please fill in all delivery information fields.', 'error');
+                return false;
+            }
+            if (!/^\d{8,15}$/.test(phone)) {
+                showMessage("Phone must be 8–15 digits and contain only numbers.", 'error');
+                return false;
+            }
+            if (!/^[A-Za-z\s]{2,}$/.test(name)) {
+                showMessage("Please enter a valid full name (letters and spaces only).", 'error');
+                return false;
+            }
+            const numericFields = {
+                'Building Number': building,
+                'Floor Number': floor,
+                'Apartment Number': apartment
+            };
+            for (let label in numericFields) {
+                const val = numericFields[label];
+                if (isNaN(val) || val.trim() === "") {
+                    showMessage(`Please enter a valid number for ${label}.`, 'error');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Function to initiate Paymob payment
+        async function initiatePaymobPayment(paymentMethodType) {
+            if (!validateDeliveryInfo()) return;
+
+            let mobileWalletNumber = null;
+            if (paymentMethodType === 'mobile_wallet') {
+                mobileWalletNumber = mobileWalletNumberInput.value.trim();
+                if (!/^\d{11}$/.test(mobileWalletNumber)) {
+                    showMessage('Please enter a valid 11-digit mobile wallet number (e.g., 01012345678).', 'error');
+                    return;
+                }
+            }
+
+            let totalAmount = parseFloat(orderTotalAmountSpan.textContent.replace('E£', ''));
+            if (isNaN(totalAmount)) {
+                showMessage('Could not determine total amount. Please refresh the page.', 'error');
+                return;
+            }
+
+            const email = document.querySelector('input[name="email"]').value;
+            const fullName = document.querySelector('input[name="name"]').value;
+            const firstName = fullName.split(' ')[0] || 'N/A';
+            const lastName = fullName.split(' ').slice(1).join(' ') || 'N/A';
+            const phone = document.querySelector('input[name="phone"]').value;
+            const address = document.querySelector('textarea[name="address"]').value;
+            const building = document.querySelector('input[name="building"]').value;
+            const floor = document.querySelector('input[name="floor"]').value;
+            const apartment = document.querySelector('input[name="apartment"]').value;
+            const governorate = document.querySelector('select[name="governorate"]').value;
+
+            paymobLoadingIndicator.classList.remove('hidden');
+            payWithCardBtn.disabled = true;
+            payWithWalletBtn.disabled = true;
+            cashPaymentRadio.disabled = true;
+            onlinePaymentRadio.disabled = true;
+            mobileWalletNumberInput.disabled = true;
+
+            try {
+                const response = await fetch('/create_payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: totalAmount,
+                        currency: 'EGP',
+                        payment_method_type: paymentMethodType,
+                        email,
+                        full_name: fullName,
+                        first_name: firstName,
+                        last_name: lastName,
+                        phone_number: phone,
+                        address,
+                        building,
+                        floor,
+                        apartment,
+                        governorate,
+                        mobile_wallet_number: mobileWalletNumber
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to create payment session.');
+                }
+
+                const data = await response.json();
+                console.log("Full payment response:", data);
+
+                if (paymentMethodType === 'mobile_wallet') {
+                    const win = window.open('', '_blank');
+
+                    if (win && data.payment_url) {
+                        console.log("Redirecting to:", data.payment_url);
+                        win.location.href = data.payment_url;
+                        showMessage('Please complete your payment in the new window that just opened.', 'info');
+                    } else if (!win) {
+                        // Popup was blocked
+                        showMessage('Popup blocked! Please allow popups in your browser to continue.', 'error');
+                    } else {
+                        // URL missing
+                        showMessage('Payment failed. No redirect URL received.', 'error');
+                    }
+
+                } else {
+                    window.location.href = data.payment_url;
+                }
+
+            } catch (error) {
+                console.error('Error initiating payment:', error);
+                showMessage(`Payment initiation failed: ${error.message}`, 'error');
+            } finally {
+                if (paymentMethodType !== 'mobile_wallet') {
+                    paymobLoadingIndicator.classList.add('hidden');
+                    payWithCardBtn.disabled = false;
+                    payWithWalletBtn.disabled = false;
+                    cashPaymentRadio.disabled = false;
+                    onlinePaymentRadio.disabled = false;
+                    mobileWalletNumberInput.disabled = false;
+                }
+            }
+        }
+
+
+        // Event listener for "Pay with Wallet" button
+        payWithWalletBtn.addEventListener('click', () => {
+            mobileWalletInputGroup.classList.remove('hidden');
+            mobileWalletNumberInput.setAttribute('required', 'required');
+            mobileWalletNumberInput.focus();
+            initiatePaymobPayment('mobile_wallet');
+        });
+
+        // Event listener for "Pay with Card" button
+        payWithCardBtn.addEventListener('click', () => {
+            mobileWalletInputGroup.classList.add('hidden');
+            mobileWalletNumberInput.removeAttribute('required');
+            initiatePaymobPayment('card');
+        });
+
+        // Prevent default form submission if online payment is selected
+        checkoutForm.addEventListener('submit', function (event) {
+            if (onlinePaymentRadio.checked) {
+                event.preventDefault();
+                showMessage('Please use the "Pay with Card" or "Pay with Mobile Wallet" buttons for online payment.', 'info');
+            } else {
+                if (!validateDeliveryInfo()) {
+                    event.preventDefault();
+                    return;
+                }
+            }
+        });
+
+    </script>
+
+    {% include 'footer.html' %}
+</body>
+
+</html>

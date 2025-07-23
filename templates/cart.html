@@ -1,0 +1,396 @@
+{% include 'header.html' %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Your Cart | Metro Nary</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Ensure body takes full viewport height */
+        }
+
+        .main {
+            flex: 1; /* Allows main content to grow and push footer down */
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px 80px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-top: 100px; /* Adjust as needed for header */
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            color: red;
+        }
+
+        .cart-item {
+            border-top: 1px solid rgba(255, 0, 0, 0.2);
+            width: 100%; /* Changed to 100% since main has max-width */
+            margin: 0 auto;
+            padding: 20px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .cart-item:last-of-type {
+            border-bottom: 1px solid rgba(255, 0, 0, 0.2); /* Add bottom border to last item */
+        }
+
+        .cart-item img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            border-radius: 8px;
+            flex-shrink: 0; /* Prevent image from shrinking */
+        }
+
+        .cart-details {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Distribute content vertically */
+        }
+
+        .cart-details h2 {
+            margin: 0 0 8px;
+            font-size: 20px;
+            color: #e0e0e0;
+        }
+
+        .cart-details p {
+            margin: 3px 0;
+            font-size: 14px;
+            color: #cccccc;
+        }
+        
+        .item-subtotal {
+            font-weight: bold;
+            color: red;
+            font-size: 16px;
+            margin-top: 5px;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .quantity-control form {
+            display: inline-block; /* Allows forms to sit side-by-side */
+            margin: 0;
+        }
+
+        .quantity-control button {
+            background: black;
+            color: white;
+            font-weight: bold;
+            padding: 6px 12px;
+            font-size: 14px;
+            border: 1px solid red;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            height: 34px;
+            width: 34px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .quantity-control button:hover {
+            background-color: red;
+            color: black;
+        }
+
+        .quantity-display {
+            width: 34px;
+            height: 34px;
+            text-align: center;
+            line-height: 34px;
+            font-size: 14px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #111;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .remove-button {
+            background: transparent;
+            border: none;
+            color: red;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            transition: color 0.2s;
+        }
+        .remove-button:hover {
+            color: darkred;
+            text-decoration: underline;
+        }
+
+        /* Removed .cart-summary and .summary-row styles as the HTML is removed */
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .action-buttons a,
+        .action-buttons button {
+            padding: 12px 24px;
+            background: red;
+            color: black;
+            text-decoration: none;
+            font-weight: bold;
+            font-family: 'Rajdhani', sans-serif;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            min-width: 160px;
+            font-size: 16px;
+            text-align: center;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .action-buttons a:hover,
+        .action-buttons button:hover {
+            background-color: darkred;
+            transform: translateY(-2px);
+        }
+
+        .empty-cart {
+            font-size: 18px;
+            padding: 80px 0;
+            text-align: center;
+            color: #ccc;
+        }
+
+        @media (max-width: 600px) {
+            .cart-item {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .cart-item img {
+                margin-bottom: 10px;
+            }
+            .cart-details {
+                align-items: center;
+            }
+            .quantity-control {
+                justify-content: center;
+            }
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            .action-buttons a, .action-buttons button {
+                width: 80%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main">
+        <h1>Your Cart</h1>
+
+        <div id="cart-items-container">
+            {% if cart_items %}
+            {% for item in cart_items %}
+            <div class="cart-item" data-cart-key="{{ item.cart_key }}">
+                <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}">
+                <div class="cart-details">
+                    <h2>{{ item.name }}</h2>
+                    <p>{{ item.description }}</p>
+                    <p>Size: {{ item.size }}</p>
+                    <p>Price: EGP <span class="item-price">{{ '%.2f'|format(item.price) }}</span></p>
+                    <p>Subtotal: EGP <span class="item-current-subtotal">{{ '%.2f'|format(item.price * item.quantity) }}</span></p>
+
+                    <div class="quantity-control">
+                        <form class="update-quantity-form" method="POST">
+                            <input type="hidden" name="cart_key" value="{{ item.cart_key }}">
+                            <button type="submit" name="action" value="decrease" class="decrease-qty-btn">−</button>
+                        </form>
+
+                        <div class="quantity-display" data-cart-key="{{ item.cart_key }}">{{ item.quantity }}</div>
+
+                        <form class="update-quantity-form" method="POST">
+                            <input type="hidden" name="cart_key" value="{{ item.cart_key }}">
+                            <button type="submit" name="action" value="increase" class="increase-qty-btn">+</button>
+                        </form>
+                    </div>
+
+                    <form class="remove-from-cart-form" method="POST">
+                        <input type="hidden" name="cart_key" value="{{ item.cart_key }}">
+                        <button type="submit" class="remove-button">Remove</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="action-buttons">
+                <a href="{{ url_for('home') }}">Continue Shopping</a>
+                <a href="{{ url_for('checkout') }}">Proceed to Checkout</a> 
+            </div>
+
+            {% else %}
+            <div class="empty-cart" id="empty-cart-message">
+                <p>Your cart is empty.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        </div>
+
+    <script>
+        // This function will no longer find the summary elements since they are removed from HTML.
+        // You can remove this function entirely if you are certain you don't need a cart summary here.
+        function updateCartSummary(totals) {
+            const summaryItemCount = document.getElementById('summary-item-count');
+            const summarySubtotal = document.getElementById('summary-subtotal');
+            const summaryShipping = document.getElementById('summary-shipping');
+            const summaryTotal = document.getElementById('summary-total');
+            // Check if elements exist before trying to update them
+            if (summaryItemCount && summarySubtotal && summaryShipping && summaryTotal) {
+                summaryItemCount.textContent = totals.item_count;
+                summarySubtotal.textContent = totals.subtotal.toFixed(2);
+                summaryShipping.textContent = totals.shipping.toFixed(2);
+                summaryTotal.textContent = totals.total.toFixed(2);
+            }
+        }
+
+        // Handle quantity update forms
+        document.querySelectorAll('.update-quantity-form').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault(); // Prevent full page reload
+
+                const cartKey = form.querySelector('input[name="cart_key"]').value;
+                const action = form.querySelector('button[name="action"]').value; // 'increase' or 'decrease'
+                
+                const formData = new URLSearchParams();
+                formData.append('cart_key', cartKey);
+                formData.append('action', action);
+
+                try {
+                    const response = await fetch('{{ url_for("update_quantity") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const cartItemDiv = document.querySelector(`.cart-item[data-cart-key="${cartKey}"]`);
+                        const cartItemsContainer = document.getElementById('cart-items-container');
+                        
+                        if (data.removed_cart_key) { // Item was removed (quantity went to 0)
+                            cartItemDiv.remove(); // Remove the item's div from the DOM
+                            if (data.cart_empty) {
+                                // Show empty cart message and the action buttons will disappear automatically
+                                cartItemsContainer.innerHTML = '<div class="empty-cart" id="empty-cart-message"><p>Your cart is empty.</p></div>';
+                            }
+                            // No need to call updateCartSummary as it's removed from HTML
+                        } else { // Quantity was just updated
+                            const quantityDisplay = cartItemDiv.querySelector('.quantity-display');
+                            const itemPriceText = cartItemDiv.querySelector('.item-price').textContent;
+                            const itemPrice = parseFloat(itemPriceText.replace('EGP ', ''));
+                            const itemCurrentSubtotalSpan = cartItemDiv.querySelector('.item-current-subtotal');
+
+                            quantityDisplay.textContent = data.new_quantity;
+                            itemCurrentSubtotalSpan.textContent = (itemPrice * data.new_quantity).toFixed(2);
+                            // No need to call updateCartSummary as it's removed from HTML
+                        }
+                        console.log(data.message);
+                    } else {
+                        alert('Error: ' + (data.message || 'Could not update quantity.'));
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    alert('An error occurred. Please try again.');
+                }
+            });
+        });
+
+        // Handle remove from cart forms
+        document.querySelectorAll('.remove-from-cart-form').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault(); // Prevent full page reload
+
+                if (!confirm('Are you sure you want to remove this item from your cart?')) {
+                    return; // User cancelled
+                }
+
+                const cartKey = form.querySelector('input[name="cart_key"]').value;
+                
+                const formData = new URLSearchParams();
+                formData.append('cart_key', cartKey);
+
+                try {
+                    const response = await fetch('{{ url_for("remove_from_cart") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const cartItemDiv = document.querySelector(`.cart-item[data-cart-key="${data.removed_cart_key}"]`);
+                        const cartItemsContainer = document.getElementById('cart-items-container');
+
+                        if (cartItemDiv) {
+                            cartItemDiv.remove(); // Remove the item's div from the DOM
+                        }
+                        
+                        if (data.cart_empty) {
+                            // Show empty cart message and the action buttons will disappear automatically
+                            cartItemsContainer.innerHTML = '<div class="empty-cart" id="empty-cart-message"><p>Your cart is empty.</p></div>';
+                        }
+                        // No need to call updateCartSummary as it's removed from HTML
+                        console.log(data.message);
+                    } else {
+                        alert('Error: ' + (data.message || 'Could not remove item.'));
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    alert('An error occurred. Please try again.');
+                }
+            });
+        });
+
+        // Initial check for empty cart on page load (if not initially rendered as empty)
+        document.addEventListener('DOMContentLoaded', () => {
+            const cartItemsContainer = document.getElementById('cart-items-container');
+            const emptyCartMessage = document.getElementById('empty-cart-message');
+
+            // If cart items container is empty AND there's no empty message yet, add the empty message
+            if (cartItemsContainer && cartItemsContainer.children.length === 0 && !emptyCartMessage) {
+                cartItemsContainer.innerHTML = '<div class="empty-cart" id="empty-cart-message"><p>Your cart is empty.</p></div>';
+            }
+        });
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    {% include 'footer.html' %}
+</body>
+
+</html>

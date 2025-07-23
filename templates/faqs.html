@@ -1,0 +1,72 @@
+{% include 'header.html' %}
+
+{% block title %}FAQs | Metro Nary{% endblock %}
+{% block meta_description %}Find answers to common questions about shipping, returns, and sizing at Metro Nary.{% endblock %}
+{% block og_title %}FAQs | Metro Nary{% endblock %}
+{% block og_description %}Your top questions answered — from delivery times to size charts.{% endblock %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FAQs | Metro Nary</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            background: black;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        main {
+            flex: 1;
+            padding-top: 80px;
+        }
+
+        .faq-wrapper {
+            max-width: 800px;
+            margin: 0 auto 60px;
+            padding: 20px;
+        }
+
+        .faq-item {
+            background-color: #1a1a1a;
+            border: 1px solid red;
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 0 6px red;
+        }
+
+        .faq-item h3 {
+            color: red;
+            margin-bottom: 8px;
+        }
+
+        .faq-item p {
+            color: #ddd;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="faq-wrapper">
+            <h1 style="text-align: center; color: red;">❓ FAQs</h1>
+
+            {% for faq in faqs %}
+            <div class="faq-item">
+                <h3>{{ faq.question }}</h3>
+                <p>{{ faq.answer }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    {% include 'footer.html' %}
+</body>
+</html>

@@ -1,0 +1,107 @@
+{% include 'header.html' %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thank You | Metro Nary</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            padding-top: 80px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 80px); /* Adjust for header height */
+            text-align: center;
+        }
+        .thankyou-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 30px;
+            border-radius: 8px;
+            background-color: #111;
+            /* Default (Failure) styles - will be overridden by success-state if applicable */
+            border: 1px solid red;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+            transition: all 0.3s ease-in-out; /* Smooth transition for state changes */
+        }
+        .thankyou-container.success-state {
+            border: 1px solid #10B981; /* Green border for success */
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); /* Green shadow for success */
+        }
+        .thankyou-container h1 {
+            margin-top: 0;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            /* Default (Failure) heading color */
+            color: red;
+            transition: color 0.3s ease-in-out; /* Smooth transition for color changes */
+        }
+        .thankyou-container h1.success-state-heading {
+            color: #10B981; /* Green color for success heading */
+        }
+        .thankyou-container p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .thankyou-container strong {
+            color: #ddd;
+        }
+        .return-home-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #333; /* Dark gray, neutral */
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            border: 1px solid #555; /* Subtle border */
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            font-family: 'Rajdhani', sans-serif; /* Keep consistent font */
+            margin-top: 20px;
+        }
+
+        .return-home-button:hover {
+            background-color: #555; /* Lighter gray on hover */
+            transform: translateY(-2px); /* Slight lift effect */
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2); /* More pronounced shadow on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="thankyou-container {% if success %}success-state{% else %}error-state{% endif %}">
+        {% if success %}
+            <h1 class="success-state-heading">Order Placed Successfully!</h1>
+            <p>Thank you, <strong>{{ name }}</strong>, for your purchase!</p>
+            <p>Your order ID is: <strong>#{{ merchant_order_id }}</strong></p>
+            {% if paymob_transaction_id and paymob_transaction_id != 'N/A (Cash)' %}
+                <p>Payment Status: <strong>{{ db_status }}</strong></p>
+                <p>Paymob Transaction ID: <strong>{{ paymob_transaction_id }}</strong></p>
+            {% else %}
+                <p>Payment Method: <strong>Cash on Delivery</strong></p>
+                <p>Your order is being prepared for delivery.</p>
+            {% endif %}
+            <p>You will receive an email confirmation shortly.</p>
+        {% else %}
+            <h1>Payment Failed!</h1> {# This heading will use the default red styling #}
+            <p>We are sorry, <strong>{{ name }}</strong>. Your payment for order ID <strong>#{{ merchant_order_id }}</strong> could not be processed.</p>
+            <p>Reason: <strong>{{ message }}</strong></p>
+            <p>Please try again or contact support if the issue persists.</p>
+            <p>Your order status in our system: <strong>{{ db_status }}</strong></p>
+        {% endif %}
+        <a href="{{ url_for('home') }}" class="return-home-button">Return to Home</a>
+    </div>
+
+    {% include 'footer.html' %}
+</body>
+</html>

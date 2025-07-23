@@ -1,0 +1,71 @@
+{% include 'header.html' %}
+
+<style>
+    body {
+        background-color: black;
+        color: white;
+        margin: 0;
+        padding: 0;
+        font-family: 'Rajdhani', sans-serif;
+    }
+
+    .orders-wrapper {
+        padding: 90px 20px 40px;
+        min-height: 100vh;
+    }
+
+    .order-box {
+        background-color: #222;
+        border: 1px solid red;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 0 8px red;
+    }
+
+    .order-box h3 {
+        color: red;
+        margin-bottom: 10px;
+    }
+
+    .order-box p {
+        margin: 5px 0;
+    }
+
+    .order-box ul {
+        margin-left: 20px;
+        padding-left: 15px;
+    }
+
+    .order-box li {
+        margin-bottom: 6px;
+    }
+</style>
+
+<div class="orders-wrapper">
+    <h1 style="color: red;">Your Orders</h1>
+
+    {% if orders %}
+        {% for order in orders %}
+        <div class="order-box">
+            <h3>Order #{{ order.id }}</h3>
+            <p><strong>Date:</strong> {{ order.created_at }}</p>
+            <p><strong>Total:</strong> EGP {{ order.total_price }}</p>
+            <p><strong>Status:</strong> {{ order.status }}</p>
+
+            <p><strong>Items:</strong></p>
+            <ul>
+                {% for item in order['items'] %}
+                <li>
+                    {{ item.name }} – Size: {{ item.size }}, Quantity: {{ item.quantity }}, Price: EGP {{ item.price }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No orders found for your account.</p>
+    {% endif %}
+</div>
+
+{% include 'footer.html' %}

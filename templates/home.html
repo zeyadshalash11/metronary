@@ -1,0 +1,558 @@
+{% include 'header.html' %}
+
+{% block title %}Metro Nary | Home{% endblock %}
+{% block meta_description %}Discover Cairo’s boldest streetwear brand — made in Egypt, for the streets.{% endblock %}
+{% block og_title %}Metro Nary | Urban Egyptian Fashion{% endblock %}
+{% block og_description %}Street-inspired outfits built for bold characters.{% endblock %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZGZ98PHJN9"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-ZGZ98PHJN9');
+    </script>
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> {# CONFIRMED: This is crucial for proper
+    mobile scaling #}
+    <title>Metro Nary</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet"> {# Added more weights #}
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <style>
+        /* General body styling for sticky footer and overall layout */
+        body {
+            display: flex;
+            flex-direction: column;
+            /* Arrange content and footer vertically */
+            min-height: 100vh;
+            /* Ensure body takes at least full viewport height */
+            background-color: black;
+            /* Slightly darker than pure black */
+            color: #f0f0f0;
+            /* Off-white for better contrast */
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .main {
+            flex: 1;
+            /* This will make the main content area expand and push the footer down */
+            display: flex;
+            justify-content: center;
+            padding: 90px 20px 20px;
+            /* Adjusted top padding for header */
+            position: relative;
+            z-index: 10;
+        }
+
+        /* --- PRODUCT GRID AND CARDS --- */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            /* Slightly wider cards */
+            max-width: 750px;
+            width: 100%;
+            gap: 20px;
+            /* Reduce space between cards */
+            padding: 0 10px;
+            /* Slightly less horizontal padding */
+            box-sizing: border-box;
+            margin: 0 auto;
+        }
+
+        .product-card {
+            border: 1px solid #FF0000;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
+            padding: 18px;
+            text-align: center;
+            background-color: black;
+            border-radius: 10px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            display: flex;
+
+            max-width: 100%;
+            /* Fill the grid column */
+            width: 100%;
+
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 10px;
+            height: auto;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+
+
+
+        .product-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            /* Lift and slightly enlarge */
+            box-shadow: 0 8px 20px rgba(255, 0, 0, 0.6);
+            /* More intense glow on hover */
+        }
+
+        .product-card h3 {
+            margin: 12px 0 8px;
+            /* Adjusted margins */
+            font-size: 1.2em;
+            font-weight: 600;
+            /* Bolder product names */
+            color: #ffffff;
+            text-align: left;
+            word-wrap: break-word;
+            /* Prevent long names from overflowing */
+        }
+
+        .product-card p {
+            margin: 0 0 15px;
+            /* Adjusted margins */
+            font-size: 1.1em;
+            /* Slightly larger price text */
+            font-weight: 500;
+            color: #FF4500;
+            /* Orange-red for prices */
+            text-align: left;
+        }
+
+        /* Responsive adjustments for product grid */
+
+
+        /* --- Image Slider within Product Card --- */
+        .image-slider {
+            position: relative;
+            width: 100%;
+            padding-top: 100%;
+            /* Creates a 1:1 aspect ratio (square) container for images */
+            overflow: hidden;
+            border-radius: 6px;
+            background-color: #000;
+            /* Ensure black background for image area */
+            margin-bottom: 10px;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* Keeps aspect ratio, fits within container */
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+            z-index: 0;
+        }
+
+        .slide.active {
+            opacity: 1;
+            z-index: 1;
+        }
+
+        .arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            /* **CRUCIAL CHANGE: No background color at all** */
+            color: white;
+            /* **Keeping the arrow symbol white** */
+            border: none;
+            /* Ensure no border is present */
+            padding: 0 8px;
+            /* **ADJUSTED: Reduced horizontal padding, now just for symbol spacing** */
+            cursor: pointer;
+            font-size: 28px;
+            /* **ADJUSTED: Made the arrow symbol larger to be more visible without a background** */
+            font-weight: bold;
+            /* **ADDED: Make the arrow symbol bolder** */
+            z-index: 5;
+            /* border-radius is no longer necessary/relevant as there's no background shape */
+            transition: opacity 0.3s ease, color 0.2s ease, transform 0.2s ease;
+            /* Transition opacity and color/transform */
+            line-height: 1;
+            /* Ensures proper vertical alignment of the symbol */
+            opacity: 0;
+            /* **CONFIRMED: Hidden by default on desktop** */
+        }
+
+        /* **UPDATED: Hover effect for the arrow symbol itself** */
+        .arrow:hover {
+            background: none;
+            /* **CRUCIAL CHANGE: No background on hover either** */
+            transform: translateY(-50%) scale(1.2);
+            /* Make the symbol slightly larger on hover */
+            opacity: 1;
+            /* Ensure it stays visible on hover */
+            color: red;
+            /* **OPTIONAL: Change the arrow color to red on hover for feedback** */
+        }
+
+        .image-slider:hover .arrow {
+            /* **UPDATED: Show arrows only on hover of the slider area** */
+            opacity: 1;
+            display: block;
+            /* Ensure it's block so opacity transition works */
+        }
+
+        @media (max-width: 768px) {
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .product-card {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .left {
+            left: 8px;
+        }
+
+        .right {
+            right: 8px;
+        }
+
+        /* Existing styles (ensure they don't conflict) */
+        .closebtn {
+            z-index: 1001;
+            /* higher than header/sidebar */
+        }
+
+        /* --- Toast Notification Styles --- */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            /* Make sure it's above everything else */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-end;
+            /* Align toasts to the right */
+            pointer-events: none;
+            /* Allows clicks to pass through to elements behind toasts */
+        }
+
+        .toast {
+            background-color: #333;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            /* Start hidden */
+            transform: translateY(-20px);
+            /* Start slightly above its final position */
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            min-width: 220px;
+            max-width: 350px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: 500;
+            pointer-events: auto;
+            /* Re-enable pointer events for the toast itself (if clickable) */
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.hide {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        .toast.success {
+            background-color: #28a745;
+            /* Green for success */
+        }
+
+        .toast.error {
+            background-color: #dc3545;
+            /* Red for error */
+        }
+
+        .toast.warning {
+            background-color: #ffc107;
+            /* Yellow for warning */
+            color: #333;
+            /* Dark text for warning */
+        }
+
+        /* --- Add to Cart Button Styles (Replacing .add-to-cart-box) --- */
+        .add-to-cart-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: #111;
+            /* Default background */
+            padding: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 2;
+            border: none;
+            /* Ensure it's a borderless button */
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            /* Smooth transitions */
+            display: flex;
+            /* To center the image */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .add-to-cart-btn img {
+            height: 20px;
+            /* Icon size */
+        }
+
+        .add-to-cart-btn:hover {
+            background-color: red;
+            /* On hover, turn red */
+            box-shadow: 0 0 8px red;
+        }
+
+        /* Styles for different button states (feedback for user) */
+        .add-to-cart-btn.adding {
+            background-color: orange;
+            /* During AJAX call */
+            box-shadow: 0 0 10px orange;
+            cursor: wait;
+        }
+
+        .add-to-cart-btn.added {
+            background-color: #28a745;
+            /* Green when successfully added */
+            box-shadow: 0 0 10px #28a745;
+            pointer-events: none;
+            /* Disable clicks while in 'added' state */
+        }
+
+        .add-to-cart-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            background-color: #6c757d;
+            /* Grey if fully disabled after too many adds, etc. */
+        }
+
+        #flame-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="toast-container"></div> {# ADDED: Container for toast notifications #}
+
+    {% if not session.get('user_email') %}
+    <div id="login-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 9999; display: flex;
+align-items: center; justify-content: center; flex-direction: column; color: white; font-family: Rajdhani;
+display: none;">
+        <div style="text-align: center;">
+            <h2>Welcome to Metro Nary</h2>
+            <p>Would you like to log in to view your past orders?</p>
+            <a href="{{ url_for('user_login') }}"
+                style="padding: 10px 20px; background: red; color: white; border-radius: 5px; text-decoration: none;">Log
+                In</a>
+            <br><br>
+            <button onclick="dismissLoginModal()"
+                style="background: none; color: gray; font-size: 24px; border: none; cursor: pointer;">✖</button>
+        </div>
+    </div>
+
+    <script>
+        // Only show splash if user hasn't dismissed it before
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!localStorage.getItem('splashDismissed')) {
+                document.getElementById("login-modal").style.display = "flex";
+            }
+        });
+
+        function dismissLoginModal() {
+            const modal = document.getElementById("login-modal");
+            if (modal) modal.style.display = "none";
+            localStorage.setItem('splashDismissed', 'true');
+        }
+    </script>
+    {% endif %}
+
+    <div class="main">
+        <div class="product-grid">
+            {% for product in products %}
+            <div class="product-card"
+                onclick="window.location.href='{{ url_for('product_detail', product_id=product.id) }}'">
+                <div class="image-slider"> {# Removed onmouseover/out, using CSS :hover as requested #}
+                    {# Loop through the list of images and display them #}
+                    {% for img_path in product.images %}
+                    <img class="slide {% if loop.first %}active{% endif %}"
+                        src="{{ url_for('static', filename=img_path) }}" alt="{{ product.name }}">
+                    {% endfor %}
+                    {# Optional: Add a placeholder if product has no images #}
+                    {% if not product.images %}
+                    <img class="slide active" src="{{ url_for('static', filename='placeholder.png') }}"
+                        alt="No image available">
+                    {% endif %}
+                    <button class="arrow left" onclick="event.stopPropagation(); prevSlide(this)">❮</button>
+                    <button class="arrow right" onclick="event.stopPropagation(); nextSlide(this)">❯</button>
+                </div>
+                <h3>{{ product.name }}</h3>
+                <p>EGP {{ product.price }}</p>
+                {# **UPDATED: Add to cart button is now a <button> element with proper attributes** #}
+                    <button class="add-to-cart-btn" data-product-id="{{ product.id }}" data-default-size="M"
+                        onclick="event.stopPropagation();">
+                        <img src="{{ url_for('static', filename='cart-icon.ico') }}" alt="Add to Cart">
+                    </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="flame-background"></div>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script>
+        particlesJS.load('flame-background', '/static/particles.json');
+    </script>
+
+    <script>
+        // Image Slider JavaScript Functions (These remain as they are)
+        function prevSlide(button) {
+            const slider = button.closest('.image-slider');
+            const slides = Array.from(slider.querySelectorAll('.slide'));
+            const activeSlide = slider.querySelector('.slide.active');
+            const currentIndex = slides.indexOf(activeSlide);
+            activeSlide.classList.remove('active');
+            const newIndex = (currentIndex - 1 + slides.length) % slides.length;
+            slides[newIndex].classList.add('active');
+        }
+
+        function nextSlide(button) {
+            const slider = button.closest('.image-slider');
+            const slides = Array.from(slider.querySelectorAll('.slide'));
+            const activeSlide = slider.querySelector('.slide.active');
+            const currentIndex = slides.indexOf(activeSlide);
+            activeSlide.classList.remove('active');
+            const newIndex = (currentIndex + 1) % slides.length;
+            slides[newIndex].classList.add('active');
+        }
+
+        // --- Toast Notification Functions ---
+        /**
+         * Displays a toast notification on the screen.
+         * @param {string} message The message to display.
+         * @param {'success' | 'error' | 'warning'} type The type of toast (affects color).
+         * @param {number} duration The duration in milliseconds before the toast hides.
+         */
+        function showToast(message, type = 'success', duration = 3000) {
+            const toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                console.error('Toast container not found!');
+                return;
+            }
+
+            const toast = document.createElement('div');
+            toast.classList.add('toast', type);
+            toast.textContent = message;
+
+            toastContainer.appendChild(toast);
+
+            // Trigger the show animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100); // Small delay to allow CSS transition to apply
+
+            // Hide and remove the toast after duration
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.classList.add('hide'); // Trigger hide animation
+                // Remove element after hide animation completes
+                toast.addEventListener('transitionend', () => {
+                    toast.remove();
+                }, { once: true });
+            }, duration);
+        }
+
+        // --- Add to Cart Logic for Home Page ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+
+            addToCartButtons.forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    // Prevent the product card's click event from firing (which would navigate to product_detail)
+                    event.stopPropagation();
+
+                    const productId = button.dataset.productId;
+                    const defaultSize = button.dataset.defaultSize || 'M'; // Get default size from data attribute
+
+                    // Visual feedback: Change button state to 'adding'
+                    button.classList.add('adding');
+                    button.disabled = true; // Disable button during AJAX call
+
+                    try {
+                        const response = await fetch(`/add_to_cart/${productId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams({ size: defaultSize })
+                        });
+
+                        const data = await response.json(); // Assuming your Flask route returns JSON
+
+                        if (response.ok) {
+                            showToast('Product added successfully!', 'success');
+                            button.classList.remove('adding');
+                            button.classList.add('added'); // Visual feedback: Change to 'added' state
+                            // Optionally re-enable button after a short delay or if you want to allow multiple adds
+                            setTimeout(() => {
+                                button.classList.remove('added');
+                                button.disabled = false;
+                            }, 1500); // Re-enable after 1.5 seconds
+                        } else {
+                            // If Flask returns an error (e.g., product not found, out of stock)
+                            showToast(data.message || 'Failed to add product to cart.', 'error');
+                            button.classList.remove('adding');
+                            button.disabled = false; // Re-enable on error
+                        }
+                    } catch (error) {
+                        // This catches network errors or issues with the fetch request itself
+                        console.error('Error adding to cart:', error);
+                        showToast('An unexpected error occurred. Please try again.', 'error');
+                        button.classList.remove('adding');
+                        button.disabled = false; // Re-enable on JS error
+                    }
+                });
+            });
+        });
+    </script>
+
+    {% include 'footer.html' %}
+</body>
+
+</html>

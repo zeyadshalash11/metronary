@@ -1,0 +1,411 @@
+<!-- Paste this after {% include 'header.html' %} -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.name }} | Metro Nary</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: black;
+            color: #f8f8f8;
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+        }
+
+        .product-page-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 100px 20px 40px;
+        }
+
+        .product-container {
+            display: flex;
+            flex-direction: row;
+            background-color: black;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(255, 0, 0, 0.2), 0 0 15px rgba(255, 0, 0, 0.1);
+            max-width: 1000px;
+            width: 100%;
+            overflow: hidden;
+            padding: 30px;
+            gap: 30px;
+            margin: 0 20px;
+        }
+
+        .image-slider {
+            flex: 2;
+            width: 100%;
+            padding-top: 50%;
+            position: relative;
+            overflow: hidden;
+            background-color: black;
+            border-radius: 8px;
+        }
+
+        .arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            color: white;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            font-size: 32px;
+            font-weight: bold;
+            opacity: 0;
+            transition: color 0.3s ease, opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .image-slider:hover .arrow {
+            opacity: 1;
+        }
+
+        .arrow:hover {
+            color: red;
+        }
+
+        .arrow.left {
+            left: 10px;
+        }
+
+        .arrow.right {
+            right: 10px;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+        }
+
+        .slide.active {
+            opacity: 1;
+        }
+
+        .product-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-name {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .product-price {
+            font-size: 1.5em;
+            color: #FF4500;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .size-label {
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .size-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .size-box {
+            border: 2px solid #555;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            background-color: #222;
+            font-weight: 500;
+        }
+
+        .size-box:hover {
+            border-color: red;
+        }
+
+        .size-box.selected {
+            background-color: red;
+            color: black;
+            font-weight: 700;
+        }
+
+        .product-description {
+            font-size: 0.95em;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .action-buttons form {
+            flex: 1;
+        }
+
+        .action-buttons button {
+            width: 100%;
+            background-color: #FF0000;
+            border: none;
+            color: black;
+            font-weight: 700;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase;
+        }
+
+        .action-buttons button:hover {
+            background-color: #cc0000;
+        }
+
+        #cart-success {
+            margin-top: 12px;
+            padding: 10px;
+            background-color: #004d00;
+            color: #aaffaa;
+            border: 1px solid #00cc66;
+            border-radius: 6px;
+            font-weight: 600;
+            display: none;
+            text-align: center;
+        }
+
+        #size-error {
+            margin-top: 12px;
+            padding: 10px;
+            background-color: #2a0000;
+            border: 1px solid red;
+            color: #ffcccc;
+            border-radius: 6px;
+            display: none;
+            text-align: center;
+        }
+
+        .size-chart-link {
+            margin-top: 15px;
+        }
+
+        .size-chart-link a {
+            color: #FF4500;
+            text-decoration: none;
+        }
+
+        .size-chart-link a:hover {
+            text-decoration: underline;
+            color: red;
+        }
+
+        @media (max-width: 768px) {
+            .product-container {
+                flex-direction: column;
+                padding: 20px;
+            }
+
+            .image-slider {
+                padding-top: 100%;
+                width: 100%;
+                margin: 0 auto;
+            }
+
+
+
+            .product-info,
+            .size-chart-link,
+            .product-description {
+                text-align: center;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .action-buttons button {
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="product-page-content">
+        <div class="product-container">
+            <div class="image-slider">
+                {% for img_path in product.images %}
+                <img class="slide {% if loop.first %}active{% endif %}" src="{{ url_for('static', filename=img_path) }}"
+                    alt="{{ product.name }} Image {{ loop.index }}">
+                {% endfor %}
+                {% if not product.images %}
+                <img class="slide active" src="{{ url_for('static', filename='placeholder.png') }}"
+                    alt="No image available">
+                {% endif %}
+
+                <!-- Slides go here -->
+                <button class="arrow left" onclick="prevSlide(this)">❮</button>
+                <button class="arrow right" onclick="nextSlide(this)">❯</button>
+            </div>
+
+            <div class="product-info">
+                <div class="product-name">{{ product.name }}</div>
+                <div class="product-price">EGP {{ product.price }}</div>
+
+                <label for="size-selection" class="size-label">Select Size:</label>
+                <div class="size-options" id="size-selection">
+                    {% for size in product.sizes %}
+                    <div class="size-box" data-size="{{ size }}" onclick="selectSize(this)">{{ size }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="product-description">{{ product.description }}</div>
+
+                <div class="action-buttons">
+                    <form id="add-to-cart-form" onsubmit="addToCart(event)">
+                        <input type="hidden" name="size" id="size-hidden">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit">Add to Cart</button>
+                        <div id="cart-success"> Item added to cart successfully!</div>
+                    </form>
+
+                    <form id="checkout-form" method="POST">
+                        <input type="hidden" id="checkout-size" name="size">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="button" id="checkout-now">Buy Now</button>
+                    </form>
+                </div>
+
+                <div class="size-chart-link">
+                    <a href="{{ url_for('size_guide') }}">Size Chart</a>
+                </div>
+
+                <div id="size-error">⚠️ Please select a size before proceeding.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedProductSize = '';
+
+        function selectSize(el) {
+            document.querySelectorAll('.size-box').forEach(box => box.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedProductSize = el.dataset.size;
+            document.getElementById('size-error').style.display = 'none';
+        }
+
+        async function addToCart(e) {
+            e.preventDefault();
+
+            if (!selectedProductSize) {
+                document.getElementById('size-error').style.display = 'block';
+                return;
+            }
+
+            document.getElementById("size-hidden").value = selectedProductSize;
+
+            const formData = new URLSearchParams();
+            formData.append('size', selectedProductSize);
+            formData.append('quantity', '1');
+
+            try {
+                const response = await fetch("{{ url_for('add_to_cart', product_id=product.id) }}", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    document.getElementById('cart-success').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('cart-success').style.display = 'none';
+                    }, 2500);
+                } else {
+                    alert("Error adding item to cart.");
+                }
+            } catch (error) {
+                console.error("Cart add error:", error);
+                alert("Something went wrong.");
+            }
+        }
+
+        document.getElementById("checkout-now").addEventListener("click", async function () {
+            if (!selectedProductSize) {
+                document.getElementById('size-error').style.display = 'block';
+                return;
+            }
+
+            document.getElementById("checkout-size").value = selectedProductSize;
+
+            const formData = new URLSearchParams();
+            formData.append('size', selectedProductSize);
+            formData.append('quantity', '1');
+
+            try {
+                const response = await fetch("{{ url_for('add_to_cart', product_id=product.id) }}", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    setTimeout(() => {
+                        window.location.href = "{{ url_for('checkout') }}";
+                    }, 300);
+                } else {
+                    alert("Failed to add to cart.");
+                }
+            } catch (error) {
+                alert("Unexpected error.");
+            }
+        });
+
+        function prevSlide(button) {
+            const slider = button.closest('.image-slider');
+            const slides = slider.querySelectorAll('.slide');
+            const active = slider.querySelector('.slide.active');
+            let index = Array.from(slides).indexOf(active);
+
+            slides[index].classList.remove('active');
+            index = (index - 1 + slides.length) % slides.length;
+            slides[index].classList.add('active');
+        }
+
+        function nextSlide(button) {
+            const slider = button.closest('.image-slider');
+            const slides = slider.querySelectorAll('.slide');
+            const active = slider.querySelector('.slide.active');
+            let index = Array.from(slides).indexOf(active);
+
+            slides[index].classList.remove('active');
+            index = (index + 1) % slides.length;
+            slides[index].classList.add('active');
+        }
+
+    </script>
+    {% include 'footer.html' %}
+</body>
+
+</html>

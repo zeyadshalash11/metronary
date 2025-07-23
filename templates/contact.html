@@ -1,0 +1,101 @@
+{% include 'header.html' %}
+
+{% block title %}Contact Us | Metro Nary{% endblock %}
+{% block meta_description %}Need help? Reach out to Metro Nary's support team for any order or product inquiry.{% endblock %}
+{% block og_title %}Contact Metro Nary{% endblock %}
+{% block og_description %}Message us directly with any questions, feedback, or support needs.{% endblock %}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Contact Us – Metro Nary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .contact-wrapper {
+            max-width: 600px;
+            margin: 100px auto 40px;
+            padding: 30px 20px;
+            background-color: #111;
+            border: 1px solid red;
+            box-shadow: 0 0 10px red;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .contact-wrapper h1 {
+            color: red;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .contact-item {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .contact-item a {
+            color: #ff4444;
+            text-decoration: none;
+        }
+
+        .contact-item a:hover {
+            text-decoration: underline;
+        }
+
+        .whatsapp-btn {
+            margin-top: 20px;
+            display: inline-block;
+            padding: 10px 25px;
+            font-weight: bold;
+            background-color: #25D366;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            box-shadow: 0 0 10px #25D366;
+            transition: background-color 0.3s ease;
+        }
+
+        .whatsapp-btn:hover {
+            background-color: #128C7E;
+        }
+
+        @media (max-width: 600px) {
+            .contact-wrapper {
+                margin: 80px 20px 40px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main style="padding-bottom: 100px;">
+        <div class="contact-wrapper">
+            <h1>📞 Contact Us</h1>
+
+            <div class="contact-item">
+                Email: <a href="mailto:metronary@outlook.com">metronary@outlook.com</a>
+            </div>
+
+            <a class="whatsapp-btn" href="https://wa.me/201066608326" target="_blank">
+                Message Us on WhatsApp
+            </a>
+        </div>
+    </main>
+
+    {% include 'footer.html' %}
+</body>
+
+</html>

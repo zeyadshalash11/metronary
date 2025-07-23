@@ -1,0 +1,54 @@
+<style>
+    footer {
+        background-color: black;
+        color: #ccc;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: 'Rajdhani', sans-serif;
+        font-size: 14px;
+        margin-top: 40px;
+        position: relative;
+    }
+
+    /* Top red glow line like product card */
+    footer::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 1px;
+        width: 100%;
+        background-color: #FF0000;
+        box-shadow: 0 -4px 6px -2px #FF0000;
+    }
+
+
+    .footer-content p {
+        margin: 0;
+        font-size: 14px;
+    }
+
+    .social-icon {
+        height: 20px;
+        filter: brightness(100);
+        transition: transform 0.2s;
+        margin-left: 8px;
+    }
+
+    .social-icon:hover {
+        transform: scale(1.2);
+    }
+</style>
+
+
+
+<footer>
+    <div class="footer-content" style="display: flex; align-items: center;">
+        <p>© 2025 METRO NARY</p>
+        <a href="https://instagram.com/metronary_" target="_blank">
+            <img src="{{ url_for('static', filename='instagram-icon.ico') }}" alt="Instagram" class="social-icon">
+        </a>
+    </div>
+</footer>

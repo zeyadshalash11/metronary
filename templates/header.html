@@ -1,0 +1,181 @@
+<!-- header.html -->
+<style>
+    header {
+        display: grid;
+        grid-template-columns: 40px auto 40px;
+        align-items: center;
+        background: black;
+        padding: 5px 15px;
+        position: fixed;
+        height: 60px;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+    }
+
+    .logo-center {
+        height: 60px;
+        cursor: pointer;
+    }
+
+    .hover-scale {
+        transition: transform 0.2s ease-in-out;
+        display: inline-block;
+    }
+
+    .hover-scale:hover {
+        transform: scale(1.2);
+    }
+
+    .icon {
+        height: 24px;
+        cursor: pointer;
+        z-index: 1;
+        transition: transform 0.2s ease-in-out;
+    }
+
+    icon:hover {
+        transform: scale(1.2);
+    }
+
+    .logo-center:hover {
+        transform: scale(1.05);
+    }
+
+    .sidebar {
+        height: 100%;
+        width: 0;
+        position: fixed;
+        z-index: 1000;
+        top: 0;
+        left: 0;
+        background-color: black;
+        overflow-x: hidden;
+        transition: width 0.3s ease;
+        padding-top: 60px;
+        border-right: 1px #FF0000;
+        box-shadow: 0 0 10px #FF0000;
+    }
+
+    .sidebar a {
+        padding: 10px 20px;
+        text-decoration: none;
+        font-size: 20px;
+        color: white;
+        display: block;
+        transition: 0.2s;
+    }
+
+    .sidebar a:hover {
+        background-color: #444;
+    }
+
+    .closebtn {
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 36px;
+        color: white;
+        cursor: pointer;
+    }
+</style>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <span class="closebtn" onclick="toggleSidebar()">&times;</span>
+    <a href="{{ url_for('home') }}">Home</a>
+    <a href="{{ url_for('cart') }}">View Cart</a>
+    <a href="{{ url_for('orders') }}">My Orders</a>
+    <a href="{{ url_for('size_guide') }}">Size Guide</a>
+    <a href="{{ url_for('contact') }}">Contact Us</a>
+    <a href="{{ url_for('faqs') }}">FAQs</a>
+    {% if session.get('user_email') %}
+    <a href="{{ url_for('user_logout') }}" style="color: red;">Logout</a>
+    {% endif %}
+
+
+</div>
+
+<!-- Header -->
+<header>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Metro Nary{% endblock %}</title>
+    <meta name="description"
+        content="{% block meta_description %}Urban streetwear made in Egypt – bold & different.{% endblock %}">
+
+    <meta property="og:title" content="{% block og_title %}Metro Nary – Bold Streetwear{% endblock %}">
+    <meta property="og:description"
+        content="{% block og_description %}Cairo’s grunge-style fashion for the daring.{% endblock %}">
+    <meta property="og:image" content="{{ url_for('static', filename='images/share-thumbnail.jpg') }}">
+    <meta property="og:url" content="https://metronary.store">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!-- JSON-LD structured data -->
+    {% block jsonld %}{% endblock %}
+
+    
+    <div>
+        <span onclick="toggleSidebar()" class="hover-scale">
+            <img src="{{ url_for('static', filename='menu-icon.ico') }}" alt="Menu" class="icon">
+        </span>
+    </div>
+    <div style="text-align: center;">
+        <a href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='logo-center.ico') }}" class="logo-center" alt="Metro Nary">
+        </a>
+    </div>
+    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px; padding-right: 10px;">
+        <!-- Hello / Login -->
+        {% if session.get('user_email') %}
+        <span style="color: red;white-space: nowrap;">
+            Hello, {{ session.get('user_first_name', 'User') }}
+        </span>
+        {% else %}
+        <a href="{{ url_for('user_login') }}" class="hover-scale">
+            <img src="{{ url_for('static', filename='login-icon.ico') }}" alt="Login" class="icon"
+                style="height: 28px;">
+        </a>
+        {% endif %}
+
+        <!-- Cart Icon -->
+        <a href="{{ url_for('cart') }}" class="hover-scale">
+            <img src="{{ url_for('static', filename='cart-icon.ico') }}" alt="Cart" class="icon" style="height: 28px;">
+        </a>
+    </div>
+
+
+
+
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById("sidebar");
+            if (!sidebar) {
+                console.warn("Sidebar not found.");
+                return;
+            }
+            if (sidebar.style.width === "250px") {
+                sidebar.style.width = "0";
+            } else {
+                sidebar.style.width = "250px";
+            }
+        }
+    </script>
+
+
+    <script>
+        document.addEventListener('click', function (e) {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.querySelector('.icon');
+
+            if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+                sidebar.style.width = "0";
+            }
+        });
+    </script>
+
+
+</header>

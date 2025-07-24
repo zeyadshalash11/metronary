@@ -30,7 +30,6 @@ Pygments==2.18.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
 python-http-client==3.3.7
-pywin32==308
 pyzmq==26.2.0
 referencing==0.35.1
 requests==2.32.4

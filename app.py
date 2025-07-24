@@ -1428,13 +1428,10 @@ def admin():
     conn = sqlite3.connect('store.db')
     c = conn.cursor()
 
-    # Get status filter from the GET request
     status_filter = request.args.get('status')
 
-    # Handle the product or FAQ form submission
     if request.method == 'POST':
-        # Check if this is a FAQ submission (using a unique field to differentiate)
-        if 'question' in request.form and 'answer' in request.form: # Corrected field names from your HTML
+        if 'question' in request.form and 'answer' in request.form:
             question = request.form.get('question')
             answer = request.form.get('answer')
             if question.strip() and answer.strip():
@@ -1445,106 +1442,78 @@ def admin():
                 flash('FAQ question and answer cannot be empty.', 'error')
             return redirect(url_for('admin'))
 
-        # If not FAQ, then it's a new product submission
         name = request.form.get('name')
         price = int(request.form.get('price'))
         sizes = ','.join(request.form.getlist('sizes'))
         description = request.form.get('description')
-        
-        image_filenames = [] # To store names of saved images
-        
-        # --- Image Upload Handling ---
+        image_filenames = []
+
         if 'product_images' in request.files:
-            files = request.files.getlist('product_images') # Get all selected files
-            
-            # Limit the number of images if necessary (e.g., max 4 as in your HTML comment)
+            files = request.files.getlist('product_images')
             if len(files) > 4:
                 flash('You can only upload a maximum of 4 images.', 'error')
-                # It's good practice to re-render the form with existing data or redirect gracefully
-                # For now, we'll just continue and process up to 4 if they picked more.
-                # A more robust solution might clear or limit the files.
-
             for file in files:
                 if file.filename == '':
-                    # No file selected for this input, or an empty file input
                     continue
                 if file and allowed_file(file.filename):
                     filename = secure_filename(file.filename)
-                    # Construct the full path to save the file
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    
-                    # Ensure the directory exists
                     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-                    
                     file.save(filepath)
-                    
-                    # Store the path relative to 'static/' for database and URL_FOR
                     image_filenames.append(f'product_images/{filename}')
                 else:
                     flash(f'Invalid file type for {file.filename}. Only JPG, PNG, GIF are allowed.', 'error')
-                    # Decide if you want to abort the product addition or continue without this image
-                    # For simplicity, we'll continue and just won't add this particular image.
 
-        # Convert the list of image paths to a comma-separated string for the database
-        # If no images were uploaded, this will be an empty string
         images_db_string = ','.join(image_filenames)
-
-        # Insert product into the database
         c.execute('INSERT INTO products (name, price, image, sizes, description) VALUES (?, ?, ?, ?, ?)', 
-                    (name, price, images_db_string, sizes, description))
+                  (name, price, images_db_string, sizes, description))
         conn.commit()
-        flash('Product added successfully!', 'success') # Add a success message
-        return redirect(url_for('admin')) # Redirect after POST to prevent re-submission
+        flash('Product added successfully!', 'success')
+        return redirect(url_for('admin'))
 
-
-    # ✅ Today's date
     today = datetime.now().strftime('%Y-%m-%d')
 
-    # ✅ 1. Orders placed today (any status)
     c.execute('SELECT COUNT(*) FROM orders WHERE DATE(created_at) = ?', (today,))
     orders_today = c.fetchone()[0] or 0
 
-    # ✅ 2. Sales total today for Delivered orders only
     c.execute('SELECT SUM(total_price) FROM orders WHERE DATE(created_at) = ? AND status = "Delivered"', (today,))
     sales_today = c.fetchone()[0] or 0
 
-    # ✅ Load products
     c.execute('SELECT id, name, price, image, sizes, description FROM products')
     rows = c.fetchall()
     products = [{
         'id': row[0],
         'name': row[1],
         'price': row[2],
-        'image': row[3], # This will now be a comma-separated string of image paths
+        'image': row[3],
         'sizes': row[4].split(',') if row[4] else [],
         'description': row[5],
     } for row in rows]
-    
-    # Crucially, process the 'image' field for display in HTML
+
     for product in products:
         if product['image']:
             product['images'] = [path.strip() for path in product['image'].split(',') if path.strip()]
         else:
             product['images'] = []
 
-
-    # ✅ Load recent orders with filtering by status
-    query = '''SELECT id, name, phone, governorate, total_price, created_at, status, payment, paymob_transaction_id
+    query = '''SELECT id, name, phone, governorate, total_price, created_at, 
+                      COALESCE(status, 'Unknown') as status, 
+                      payment, paymob_transaction_id
                FROM orders'''
 
-    # If there's a status filter, apply it to the query
     if status_filter:
-        query += ' WHERE status = ?'
+        query += ' WHERE COALESCE(status, "Unknown") = ?'
 
     query += ''' ORDER BY 
-                      CASE status
+                      CASE COALESCE(status, 'Unknown')
                           WHEN 'Pending Paymob' THEN 0
                           WHEN 'Pending Cash Delivery' THEN 1
                           WHEN 'Paid' THEN 2
                           WHEN 'Shipped' THEN 3
                           WHEN 'Delivered' THEN 4
                           WHEN 'Failed' THEN 5
-                          ELSE 6
+                          WHEN 'Unknown' THEN 6
+                          ELSE 7
                       END,
                       created_at DESC
                 LIMIT 20'''
@@ -1575,16 +1544,14 @@ def admin():
             'total_price': order[4],
             'created_at': order[5],
             'status': order[6],
-            'payment_method': order[7], # Added payment method
-            'paymob_transaction_id': order[8], # Added Paymob transaction ID
+            'payment_method': order[7],
+            'paymob_transaction_id': order[8],
             'items': items,
         })
 
-    # ✅ Visitor count today
     c.execute('SELECT COUNT(*) FROM visitors WHERE date = ?', (today,))
     visitor_count = c.fetchone()[0]
 
-    # ✅ Load FAQs
     c.execute('SELECT id, question, answer FROM faqs ORDER BY id DESC')
     faqs = [{'id': row[0], 'question': row[1], 'answer': row[2]} for row in c.fetchall()]
 

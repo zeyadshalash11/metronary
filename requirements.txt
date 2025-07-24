@@ -11,3 +11,4 @@ charset-normalizer==3.4.2
 idna==3.10
 urllib3==2.5.0
 colorama==0.4.6
+gunicorn==21.2.0

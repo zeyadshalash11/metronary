@@ -71,7 +71,8 @@
 
         form.inline {
             display: inline-block;
-            margin-left: 10px; /* Spacing for inline forms */
+            margin-left: 10px;
+            /* Spacing for inline forms */
         }
 
         /* Stats cards */
@@ -195,10 +196,13 @@
             border: 1px solid red;
             border-radius: 4px;
         }
+
         .sizes-checkbox-group input[type="checkbox"] {
-            width: auto; /* Override 100% width */
+            width: auto;
+            /* Override 100% width */
             margin: 0;
-            accent-color: red; /* Colors the checkbox itself */
+            accent-color: red;
+            /* Colors the checkbox itself */
         }
 
         /* Image preview area */
@@ -211,12 +215,14 @@
             border: 1px dashed #444;
             padding: 10px;
             border-radius: 4px;
-            min-height: 50px; /* Provide some visual space */
+            min-height: 50px;
+            /* Provide some visual space */
             align-items: center;
             justify-content: center;
             color: #888;
             font-size: 0.9em;
         }
+
         #imagePreviewContainer img {
             max-width: 80px;
             height: auto;
@@ -231,18 +237,18 @@
         }
 
         // JavaScript for Image Preview
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const imageUploadInput = document.getElementById('productImages');
             const imagePreviewContainer = document.getElementById('imagePreviewContainer');
 
             if (imageUploadInput && imagePreviewContainer) {
-                imageUploadInput.addEventListener('change', function() {
+                imageUploadInput.addEventListener('change', function () {
                     imagePreviewContainer.innerHTML = ''; // Clear previous previews
                     if (this.files && this.files.length > 0) {
                         Array.from(this.files).forEach(file => {
                             if (file.type.startsWith('image/')) {
                                 const reader = new FileReader();
-                                reader.onload = function(e) {
+                                reader.onload = function (e) {
                                     const img = document.createElement('img');
                                     img.src = e.target.result;
                                     img.alt = file.name;
@@ -323,11 +329,11 @@
         <div class="product-images-preview">
             {# Iterate over product.images (which will be a list of paths from app.py) #}
             {% if product.images %}
-                {% for img_path in product.images %}
-                    <img src="{{ url_for('static', filename=img_path) }}" alt="Product Image">
-                {% endfor %}
+            {% for img_path in product.images %}
+            <img src="{{ url_for('static', filename=img_path) }}" alt="Product Image">
+            {% endfor %}
             {% else %}
-                No images available.
+            No images available.
             {% endif %}
         </div>
         <br>
@@ -364,12 +370,13 @@
         <label for="status">Filter by Status:</label>
         <select name="status" onchange="this.form.submit()">
             <option value="">All</option>
-            <option value="Pending" {% if request.args.get('status')=='Pending' %}selected{% endif %}>Pending</option>
-            <option value="Shipped" {% if request.args.get('status')=='Shipped' %}selected{% endif %}>Shipped</option>
-            <option value="Delivered" {% if request.args.get('status')=='Delivered' %}selected{% endif %}>Delivered
-            </option>
+            {% for s in ['Pending', 'Pending Paymob', 'Pending Cash Delivery', 'Paid', 'Shipped', 'Delivered', 'Failed']
+            %}
+            <option value="{{ s }}" {% if request.args.get('status')==s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
         </select>
     </form>
+
 
 
     <table>
@@ -397,7 +404,8 @@
                     <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}">
                         <select name="status" onchange="this.form.submit()"
                             style="background:#111; color: red; border: 1px solid red; padding: 4px 8px; border-radius: 4px;">
-                            {% for s in ['Pending', 'Shipped', 'Delivered', 'Pending Paymob', 'Pending Cash Delivery', 'Paid', 'Failed'] %}
+                            {% for s in ['Pending', 'Shipped', 'Delivered', 'Pending Paymob', 'Pending Cash Delivery',
+                            'Paid', 'Failed'] %}
                             <option value="{{ s }}" {% if order.status==s %}selected{% endif %}>{{ s }}</option>
                             {% endfor %}
                         </select>
@@ -416,7 +424,7 @@
                         </ul>
                         <p><strong>Payment Method:</strong> {{ order.payment_method }}</p>
                         {% if order.paymob_transaction_id and order.paymob_transaction_id != 'N/A (Cash)' %}
-                            <p><strong>Paymob Transaction ID:</strong> {{ order.paymob_transaction_id }}</p>
+                        <p><strong>Paymob Transaction ID:</strong> {{ order.paymob_transaction_id }}</p>
                         {% endif %}
                     </div>
                 </td>

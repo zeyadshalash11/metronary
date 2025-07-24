@@ -1422,6 +1422,9 @@ def admin_logout():
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
+    db = get_db()
+    cursor = db.cursor()
+    
     if not session.get('admin'):
         return redirect(url_for('admin_login'))
 
@@ -1429,6 +1432,11 @@ def admin():
     c = conn.cursor()
 
     status_filter = request.args.get('status')
+    if status_filter:
+      cursor.execute("SELECT * FROM orders WHERE status = ? ORDER BY created_at DESC", (status_filter,))
+    
+    else:
+      cursor.execute("SELECT * FROM orders ORDER BY created_at DESC")
 
     if request.method == 'POST':
         if 'question' in request.form and 'answer' in request.form:

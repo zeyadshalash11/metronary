@@ -1279,6 +1279,7 @@ def complete_checkout():
         cursor = db.cursor()
 
         # 1. Insert into orders table
+        print("✅ Attempting to insert order...")
         cursor.execute('''
             INSERT INTO orders (name, phone, address, building, floor, apartment, governorate, email, payment, shipping, total_price, created_at, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1292,6 +1293,7 @@ def complete_checkout():
         ))
         
         order_id = cursor.lastrowid # Get the ID of the newly created order
+        print(f"✅ Order inserted with ID: {order_id}")
 
         # 2. Insert into order_items table for each item in the order
         for item in cart_items_for_db:
@@ -1308,6 +1310,8 @@ def complete_checkout():
             ))
 
         db.commit() # Commit all changes to the database
+        print("✅ Order committed to database")
+        
         session.pop('cart', None) # Clear the cart after successful order
 
         flash("Your order has been placed successfully!", "success")
@@ -1325,6 +1329,7 @@ def complete_checkout():
                 <ul>
                     {''.join(f"<li>{item['product_name']} × {item['quantity']} (Size: {item['size']}) – EGP {item['price'] * item['quantity']}</li>" for item in cart_items_for_db)}
                 </ul>
+                <h3>Your Order ID: #{order_id}</h3>
                 <p>Shipping to: {address}, Building {building}, Floor {floor}, Apartment {apartment}, {governorate}</p>
                 <p>Total: EGP {final_total_price}</p>
                 """
@@ -1338,6 +1343,7 @@ def complete_checkout():
                 <p><strong>Customer:</strong> {name}</p>
                 <p><strong>Phone:</strong> {phone}</p>
                 <p><strong>Email:</strong> {email}</p>
+                <h3>Order ID: #{order_id}</h3>
                 <p><strong>Address:</strong> {address}, Building {building}, Floor {floor}, Apartment {apartment}</p>
                 <p><strong>Governorate:</strong> {governorate}</p>
                 <p><strong>Payment:</strong> Cash on Delivery</p>
@@ -1422,9 +1428,6 @@ def admin_logout():
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
-    db = get_db()
-    cursor = db.cursor()
-    
     if not session.get('admin'):
         return redirect(url_for('admin_login'))
 
@@ -1432,12 +1435,8 @@ def admin():
     c = conn.cursor()
 
     status_filter = request.args.get('status')
-    if status_filter:
-      cursor.execute("SELECT * FROM orders WHERE status = ? ORDER BY created_at DESC", (status_filter,))
-    
-    else:
-      cursor.execute("SELECT * FROM orders ORDER BY created_at DESC")
 
+    # Handle POST requests for FAQs or new products
     if request.method == 'POST':
         if 'question' in request.form and 'answer' in request.form:
             question = request.form.get('question')
@@ -1524,7 +1523,7 @@ def admin():
                           ELSE 7
                       END,
                       created_at DESC
-                LIMIT 20'''
+                '''
 
     if status_filter:
         c.execute(query, (status_filter,))
@@ -1532,30 +1531,38 @@ def admin():
         c.execute(query)
 
     order_rows = c.fetchall()
+    print(f"🛒 Orders fetched from DB: {len(order_rows)}")
+    for row in order_rows:
+     print(row)
+
     orders = []
 
     for order in order_rows:
-        order_id = order[0]
-        c.execute('''
-            SELECT products.name, order_items.quantity, order_items.price, order_items.size
-            FROM order_items
-            JOIN products ON order_items.product_id = products.id
-            WHERE order_id = ?
-        ''', (order_id,))
-        items = [{"name": i[0], "quantity": i[1], "price": i[2], "size": i[3]} for i in c.fetchall()]
+     order_id = order[0]
+     try:
+         c.execute('''
+             SELECT products.name, order_items.quantity, order_items.price, order_items.size
+             FROM order_items
+             JOIN products ON order_items.product_id = products.id
+             WHERE order_id = ?
+         ''', (order_id,))
+         items = [{"name": i[0], "quantity": i[1], "price": i[2], "size": i[3]} for i in c.fetchall()]
 
-        orders.append({
-            'id': order_id,
-            'name': order[1],
-            'phone': order[2],
-            'governorate': order[3],
-            'total_price': order[4],
-            'created_at': order[5],
-            'status': order[6],
-            'payment_method': order[7],
-            'paymob_transaction_id': order[8],
-            'items': items,
-        })
+         orders.append({
+             'id': order_id,
+             'name': order[1],
+             'phone': order[2],
+             'governorate': order[3],
+             'total_price': order[4],
+             'created_at': order[5],
+             'status': order[6],
+             'payment_method': order[7],
+             'paymob_transaction_id': order[8],
+             'items': items,
+         })
+     except Exception as e:
+       print(f"Error processing order {order_id}: {e}")
+
 
     c.execute('SELECT COUNT(*) FROM visitors WHERE date = ?', (today,))
     visitor_count = c.fetchone()[0]
@@ -1573,7 +1580,6 @@ def admin():
                            sales_today=sales_today,
                            faqs=faqs)
 
-
 @app.route('/update_order_status/<int:order_id>', methods=['POST'])
 def update_order_status(order_id):
     new_status = request.form.get('status')
@@ -1583,7 +1589,6 @@ def update_order_status(order_id):
     conn.commit()
     conn.close()
     return redirect(url_for('admin'))
-
 
 @app.route('/delete/<int:product_id>', methods=['POST'])
 def delete_product(product_id):
@@ -1734,7 +1739,7 @@ def orders():
         c.execute('''
             SELECT products.name, order_items.quantity, order_items.price, order_items.size
             FROM order_items
-            JOIN products ON order_items.product_id = products.id
+            LEFT JOIN products ON order_items.product_id = products.id
             WHERE order_items.order_id = ?
         ''', (order_id,))
         item_rows = c.fetchall()

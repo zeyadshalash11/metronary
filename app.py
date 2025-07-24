@@ -2004,5 +2004,7 @@ if __name__ == '__main__':
     create_orders_table()
     create_products_table()
     create_faqs_table()
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+
 

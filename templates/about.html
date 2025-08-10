@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About Us | Metro Nary</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>body{background:#000;color:#eee;font-family:'Rajdhani',sans-serif;margin:0} .wrap{max-width:900px;margin:100px auto 40px;padding:0 16px} h1{color:#fff} a{color:#FF4500;text-decoration:none}</style>
+</head>
+<body>
+  {% include 'header.html' %}
+  <main class="wrap">
+    <h1>About Metro Nary</h1>
+    <p>Metro Nary is an Egyptian streetwear label inspired by Cairo’s grit and motion. We design locally and ship across Egypt.</p>
+    <p>Questions? <a href="{{ url_for('contact') }}">Contact us</a>.</p>
+  </main>
+  {% include 'footer.html' %}
+</body>
+</html>

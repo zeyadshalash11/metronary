@@ -1977,6 +1977,22 @@ def delete_faq(faq_id):
     conn.close()
     return redirect(url_for('admin'))
 
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+
+@app.route("/policy/refund")
+def refund_policy():
+    return render_template("refund.html")
+
+@app.route("/policy/privacy")
+def privacy_policy():
+    return render_template("privacy.html")
+
+@app.route("/policy/shipping")
+def shipping_policy():
+    return render_template("shipping.html")
 
 # ✅ This must be last
 if __name__ == '__main__':

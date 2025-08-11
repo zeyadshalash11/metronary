@@ -8,31 +8,106 @@
     margin-top: 40px;
     position: relative;
   }
+
   footer::before {
     content: "";
-    position: absolute; top: 0; left: 0; height: 1px; width: 100%;
-    background-color: #FF0000; box-shadow: 0 -4px 6px -2px #FF0000;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 1px;
+    width: 100%;
+    background-color: #FF0000;
+    box-shadow: 0 -4px 6px -2px #FF0000;
   }
+
   .footer-wrap {
-    max-width: 1100px; margin: 0 auto;
-    display: grid; gap: 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    gap: 24px;
     grid-template-columns: 1.2fr 1fr 1fr 1fr;
   }
-  .footer-col h4 { margin: 0 0 10px; color: #fff; font-weight: 700; }
-  .footer-col a { color: #ccc; text-decoration: none; display: block; margin: 6px 0; }
-  .footer-col a:hover { color: #FF4500; }
-  .contact-line { margin: 6px 0; }
+
+  .footer-col h4 {
+    margin: 0 0 10px;
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .footer-col a {
+    color: #ccc;
+    text-decoration: none;
+    display: block;
+    margin: 6px 0;
+  }
+
+  .footer-col a:hover {
+    color: #FF4500;
+  }
+
+  .contact-line {
+    margin: 6px 0;
+  }
+
   .footer-bottom {
-    margin-top: 20px; padding-top: 10px; border-top: 1px solid #222;
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #222;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
   }
-  .social-icon { height: 20px; filter: brightness(100); transition: transform .2s; margin-left:8px; }
-  .social-icon:hover { transform: scale(1.2); }
+
+  .social-icon {
+    height: 20px;
+    filter: brightness(100);
+    transition: transform .2s;
+    margin-left: 8px;
+  }
+
+  .social-icon:hover {
+    transform: scale(1.2);
+  }
+
   @media (max-width: 800px) {
-    .footer-wrap { grid-template-columns: 1fr 1fr; }
+    .footer-wrap {
+      grid-template-columns: 1fr 1fr;
+    }
   }
+
   @media (max-width: 480px) {
-    .footer-wrap { grid-template-columns: 1fr; }
+    .footer-wrap {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media screen and (max-width: 768px) {
+
+    /* Adjust layout for tablets */
+    body {
+      padding: 10px;
+    }
+
+    .container {
+      width: 100%;
+    }
+
+    /* Add more styles as needed */
+  }
+
+  @media screen and (max-width: 480px) {
+
+    /* Adjust layout for mobile screens */
+    body {
+      padding: 5px;
+    }
+
+    .container {
+      width: 100%;
+    }
+
+    /* Further adjustments for smaller screens */
   }
 </style>
 

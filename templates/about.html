@@ -1,11 +1,82 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>About Us | Metro Nary</title>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>body{background:#000;color:#eee;font-family:'Rajdhani',sans-serif;margin:0} .wrap{max-width:900px;margin:100px auto 40px;padding:0 16px} h1{color:#fff} a{color:#FF4500;text-decoration:none}</style>
+  
+  <style>
+    /* Base styles */
+    body {
+      background: #000;
+      color: #eee;
+      font-family: 'Rajdhani', sans-serif;
+      margin: 0;
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 100px auto 40px;
+      padding: 0 16px;
+    }
+
+    h1 {
+      color: #fff;
+      font-size: 2.5rem;
+    }
+
+    a {
+      color: #FF4500;
+      text-decoration: none;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      body {
+        font-size: 14px; /* Reduce font size for smaller screens */
+      }
+
+      .wrap {
+        margin: 40px 20px;
+        padding: 0 10px;
+      }
+
+      h1 {
+        font-size: 2rem; /* Adjust heading size */
+      }
+
+      p {
+        font-size: 1rem; /* Adjust paragraph text size */
+      }
+
+      a {
+        font-size: 1.1rem; /* Increase font size of links on mobile */
+      }
+    }
+
+    /* Very small screens (portrait phones) */
+    @media (max-width: 480px) {
+      .wrap {
+        margin: 30px 10px;
+        padding: 0 8px;
+      }
+
+      h1 {
+        font-size: 1.8rem; /* Smaller font size for very small screens */
+      }
+
+      p {
+        font-size: 0.9rem; /* Adjust text size for readability */
+      }
+
+      a {
+        font-size: 1rem; /* Slightly smaller links */
+      }
+    }
+  </style>
 </head>
+
 <body>
   {% include 'header.html' %}
   <main class="wrap">

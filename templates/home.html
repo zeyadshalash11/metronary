@@ -1,10 +1,4 @@
 {% include 'header.html' %}
-
-{% block title %}Metro Nary | Home{% endblock %}
-{% block meta_description %}Discover Cairo’s boldest streetwear brand — made in Egypt, for the streets.{% endblock %}
-{% block og_title %}Metro Nary | Urban Egyptian Fashion{% endblock %}
-{% block og_description %}Street-inspired outfits built for bold characters.{% endblock %}
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -362,6 +356,34 @@
             width: 100vw;
             height: 100vh;
             pointer-events: none;
+        }
+
+        @media screen and (max-width: 768px) {
+
+            /* Adjust layout for tablets */
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Add more styles as needed */
+        }
+
+        @media screen and (max-width: 480px) {
+
+            /* Adjust layout for mobile screens */
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Further adjustments for smaller screens */
         }
     </style>
 </head>

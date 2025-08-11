@@ -1,18 +1,16 @@
 {% include 'header.html' %}
-
-{% block title %}FAQs | Metro Nary{% endblock %}
-{% block meta_description %}Find answers to common questions about shipping, returns, and sizing at Metro Nary.{% endblock %}
-{% block og_title %}FAQs | Metro Nary{% endblock %}
-{% block og_description %}Your top questions answered — from delivery times to size charts.{% endblock %}
-
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>FAQs | Metro Nary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 
     <style>
-        html, body {
+        html,
+        body {
             height: 100%;
             margin: 0;
             display: flex;
@@ -51,8 +49,37 @@
             color: #ddd;
             margin: 0;
         }
+
+        @media screen and (max-width: 768px) {
+
+            /* Adjust layout for tablets */
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Add more styles as needed */
+        }
+
+        @media screen and (max-width: 480px) {
+
+            /* Adjust layout for mobile screens */
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Further adjustments for smaller screens */
+        }
     </style>
 </head>
+
 <body>
     <main>
         <div class="faq-wrapper">
@@ -69,4 +96,5 @@
 
     {% include 'footer.html' %}
 </body>
+
 </html>

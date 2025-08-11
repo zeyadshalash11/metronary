@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Edit Product - {{ product.name }} | Metro Nary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
@@ -44,7 +46,8 @@
         input[type="text"],
         input[type="number"],
         textarea {
-            width: calc(100% - 20px); /* Account for padding */
+            width: calc(100% - 20px);
+            /* Account for padding */
             padding: 10px;
             margin-bottom: 15px;
             background: #222;
@@ -56,7 +59,8 @@
         }
 
         textarea {
-            resize: vertical; /* Allow vertical resizing */
+            resize: vertical;
+            /* Allow vertical resizing */
             min-height: 100px;
         }
 
@@ -89,10 +93,12 @@
         }
 
         .sizes-checkbox-group input[type="checkbox"] {
-            width: auto; /* Override 100% width */
+            width: auto;
+            /* Override 100% width */
             margin: 0;
             padding: 0;
-            accent-color: red; /* Colors the checkbox itself */
+            accent-color: red;
+            /* Colors the checkbox itself */
         }
 
         button {
@@ -125,8 +131,37 @@
         .back-link:hover {
             text-shadow: 0 0 5px red;
         }
+
+        @media screen and (max-width: 768px) {
+
+            /* Adjust layout for tablets */
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Add more styles as needed */
+        }
+
+        @media screen and (max-width: 480px) {
+
+            /* Adjust layout for mobile screens */
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Further adjustments for smaller screens */
+        }
     </style>
 </head>
+
 <body>
     <h1>Edit Product</h1>
 
@@ -145,11 +180,11 @@
             <div class="sizes-checkbox-group">
                 {% set all_sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] %}
                 {% for size in all_sizes %}
-                    <label>
-                        <input type="checkbox" name="sizes" value="{{ size }}"
-                               {% if size in product.sizes %}checked{% endif %}>
-                        <span>{{ size }}</span>
-                    </label>
+                <label>
+                    <input type="checkbox" name="sizes" value="{{ size }}" {% if size in product.sizes %}checked{% endif
+                        %}>
+                    <span>{{ size }}</span>
+                </label>
                 {% endfor %}
             </div>
 
@@ -162,4 +197,5 @@
 
     <a href="{{ url_for('admin') }}" class="back-link">&larr; Back to Admin Dashboard</a>
 </body>
+
 </html>

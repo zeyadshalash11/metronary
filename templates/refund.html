@@ -1,25 +1,82 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Refund & Returns Policy | Metro Nary</title>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>body{background:#000;color:#eee;font-family:'Rajdhani',sans-serif;margin:0} .wrap{max-width:900px;margin:100px auto 40px;padding:0 16px} h1{color:#fff} ul{margin-left:18px}</style>
+  <style>
+    body {
+      background: #000;
+      color: #eee;
+      font-family: 'Rajdhani', sans-serif;
+      margin: 0
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 100px auto 40px;
+      padding: 0 16px
+    }
+
+    h1 {
+      color: #fff
+    }
+
+    ul {
+      margin-left: 18px
+    }
+
+    @media screen and (max-width: 768px) {
+
+      /* Adjust layout for tablets */
+      body {
+        padding: 10px;
+      }
+
+      .container {
+        width: 100%;
+      }
+
+      /* Add more styles as needed */
+    }
+
+    @media screen and (max-width: 480px) {
+
+      /* Adjust layout for mobile screens */
+      body {
+        padding: 5px;
+      }
+
+      .container {
+        width: 100%;
+      }
+
+      /* Further adjustments for smaller screens */
+    }
+  </style>
 </head>
+
 <body>
   {% include 'header.html' %}
   <main class="wrap">
     <h1>Refund & Returns Policy</h1>
     <p>We follow Egypt’s Consumer Protection Law No. 181/2018.</p>
     <ul>
-      <li><strong>Change-of-mind returns:</strong> You may return or exchange within <strong>14 days</strong> of receipt, provided items are unused, in original packaging with tags.</li>
-      <li><strong>Defective or non-conforming items:</strong> You may return or exchange within <strong>30 days</strong> of receipt. We will refund or replace at no extra cost.</li>
-      <li><strong>Exclusions:</strong> Final-sale items and hygiene-sensitive items (e.g., worn socks) may be excluded where permitted by law.</li>
+      <li><strong>Change-of-mind returns:</strong> You may return or exchange within <strong>14 days</strong> of
+        receipt, provided items are unused, in original packaging with tags.</li>
+      <li><strong>Defective or non-conforming items:</strong> You may return or exchange within <strong>30 days</strong>
+        of receipt. We will refund or replace at no extra cost.</li>
+      <li><strong>Exclusions:</strong> Final-sale items and hygiene-sensitive items (e.g., worn socks) may be excluded
+        where permitted by law.</li>
       <li><strong>Refund method:</strong> Refunds are issued to the original payment method when applicable.</li>
-      <li><strong>How to start a return:</strong> Email <a href="mailto:Metronary@outlook.com">Metronary@outlook.com</a> with order ID, item, reason, and photos (if defective).</li>
+      <li><strong>How to start a return:</strong> Email <a href="mailto:Metronary@outlook.com">Metronary@outlook.com</a>
+        with order ID, item, reason, and photos (if defective).</li>
     </ul>
     <p>This summary is for convenience and does not limit your statutory rights under Egyptian law.</p>
   </main>
   {% include 'footer.html' %}
 </body>
+
 </html>

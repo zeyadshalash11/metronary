@@ -1,10 +1,5 @@
 {% include 'header.html' %}
 
-{% block title %}Size Guide | Metro Nary{% endblock %}
-{% block meta_description %}Check our size guide to make sure your Metro Nary gear fits perfectly.{% endblock %}
-{% block og_title %}Metro Nary Size Guide{% endblock %}
-{% block og_description %}Measurements for tops, bottoms, and more — get your perfect fit.{% endblock %}
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -88,6 +83,34 @@
                 font-size: 22px;
                 /* Even smaller heading for very small phones */
             }
+        }
+
+        @media screen and (max-width: 768px) {
+
+            /* Adjust layout for tablets */
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Add more styles as needed */
+        }
+
+        @media screen and (max-width: 480px) {
+
+            /* Adjust layout for mobile screens */
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Further adjustments for smaller screens */
         }
     </style>
 </head>

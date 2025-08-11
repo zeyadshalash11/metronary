@@ -13,6 +13,7 @@
 
 <head>
     <title>Checkout | Metro Nary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
@@ -294,6 +295,34 @@
         /* Utility class to hide elements */
         .hidden {
             display: none !important;
+        }
+
+        @media screen and (max-width: 768px) {
+
+            /* Adjust layout for tablets */
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Add more styles as needed */
+        }
+
+        @media screen and (max-width: 480px) {
+
+            /* Adjust layout for mobile screens */
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Further adjustments for smaller screens */
         }
     </style>
 </head>

@@ -4,6 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Cart | Metro Nary</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500&display=swap" rel="stylesheet">
@@ -17,20 +18,23 @@
             font-family: 'Rajdhani', sans-serif;
             display: flex;
             flex-direction: column;
-            min-height: 100vh; /* Ensure body takes full viewport height */
+            min-height: 100vh;
+            /* Ensure body takes full viewport height */
         }
 
         .main {
-            flex: 1; /* Allows main content to grow and push footer down */
+            flex: 1;
+            /* Allows main content to grow and push footer down */
             max-width: 900px;
             margin: 0 auto;
             padding: 0 20px 80px;
             width: 100%;
         }
-        
+
         h1 {
             text-align: center;
-            margin-top: 100px; /* Adjust as needed for header */
+            margin-top: 100px;
+            /* Adjust as needed for header */
             margin-bottom: 40px;
             font-size: 2.5em;
             color: red;
@@ -38,7 +42,8 @@
 
         .cart-item {
             border-top: 1px solid rgba(255, 0, 0, 0.2);
-            width: 100%; /* Changed to 100% since main has max-width */
+            width: 100%;
+            /* Changed to 100% since main has max-width */
             margin: 0 auto;
             padding: 20px 0;
             display: flex;
@@ -47,7 +52,8 @@
         }
 
         .cart-item:last-of-type {
-            border-bottom: 1px solid rgba(255, 0, 0, 0.2); /* Add bottom border to last item */
+            border-bottom: 1px solid rgba(255, 0, 0, 0.2);
+            /* Add bottom border to last item */
         }
 
         .cart-item img {
@@ -55,14 +61,16 @@
             height: 120px;
             object-fit: contain;
             border-radius: 8px;
-            flex-shrink: 0; /* Prevent image from shrinking */
+            flex-shrink: 0;
+            /* Prevent image from shrinking */
         }
 
         .cart-details {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* Distribute content vertically */
+            justify-content: space-between;
+            /* Distribute content vertically */
         }
 
         .cart-details h2 {
@@ -76,7 +84,7 @@
             font-size: 14px;
             color: #cccccc;
         }
-        
+
         .item-subtotal {
             font-weight: bold;
             color: red;
@@ -92,7 +100,8 @@
         }
 
         .quantity-control form {
-            display: inline-block; /* Allows forms to sit side-by-side */
+            display: inline-block;
+            /* Allows forms to sit side-by-side */
             margin: 0;
         }
 
@@ -110,6 +119,7 @@
             width: 34px;
             transition: background-color 0.2s, color 0.2s;
         }
+
         .quantity-control button:hover {
             background-color: red;
             color: black;
@@ -137,6 +147,7 @@
             margin-top: 10px;
             transition: color 0.2s;
         }
+
         .remove-button:hover {
             color: darkred;
             text-decoration: underline;
@@ -187,22 +198,56 @@
                 align-items: center;
                 text-align: center;
             }
+
             .cart-item img {
                 margin-bottom: 10px;
             }
+
             .cart-details {
                 align-items: center;
             }
+
             .quantity-control {
                 justify-content: center;
             }
+
             .action-buttons {
                 flex-direction: column;
                 align-items: center;
             }
-            .action-buttons a, .action-buttons button {
+
+            .action-buttons a,
+            .action-buttons button {
                 width: 80%;
             }
+        }
+
+        @media screen and (max-width: 768px) {
+
+            /* Adjust layout for tablets */
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Add more styles as needed */
+        }
+
+        @media screen and (max-width: 480px) {
+
+            /* Adjust layout for mobile screens */
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Further adjustments for smaller screens */
         }
     </style>
 </head>
@@ -221,7 +266,8 @@
                     <p>{{ item.description }}</p>
                     <p>Size: {{ item.size }}</p>
                     <p>Price: EGP <span class="item-price">{{ '%.2f'|format(item.price) }}</span></p>
-                    <p>Subtotal: EGP <span class="item-current-subtotal">{{ '%.2f'|format(item.price * item.quantity) }}</span></p>
+                    <p>Subtotal: EGP <span class="item-current-subtotal">{{ '%.2f'|format(item.price * item.quantity)
+                            }}</span></p>
 
                     <div class="quantity-control">
                         <form class="update-quantity-form" method="POST">
@@ -247,7 +293,7 @@
 
             <div class="action-buttons">
                 <a href="{{ url_for('home') }}">Continue Shopping</a>
-                <a href="{{ url_for('checkout') }}">Proceed to Checkout</a> 
+                <a href="{{ url_for('checkout') }}">Proceed to Checkout</a>
             </div>
 
             {% else %}
@@ -257,7 +303,7 @@
             {% endif %}
         </div>
 
-        </div>
+    </div>
 
     <script>
         // This function will no longer find the summary elements since they are removed from HTML.
@@ -283,7 +329,7 @@
 
                 const cartKey = form.querySelector('input[name="cart_key"]').value;
                 const action = form.querySelector('button[name="action"]').value; // 'increase' or 'decrease'
-                
+
                 const formData = new URLSearchParams();
                 formData.append('cart_key', cartKey);
                 formData.append('action', action);
@@ -301,7 +347,7 @@
                     if (data.success) {
                         const cartItemDiv = document.querySelector(`.cart-item[data-cart-key="${cartKey}"]`);
                         const cartItemsContainer = document.getElementById('cart-items-container');
-                        
+
                         if (data.removed_cart_key) { // Item was removed (quantity went to 0)
                             cartItemDiv.remove(); // Remove the item's div from the DOM
                             if (data.cart_empty) {
@@ -340,7 +386,7 @@
                 }
 
                 const cartKey = form.querySelector('input[name="cart_key"]').value;
-                
+
                 const formData = new URLSearchParams();
                 formData.append('cart_key', cartKey);
 
@@ -361,7 +407,7 @@
                         if (cartItemDiv) {
                             cartItemDiv.remove(); // Remove the item's div from the DOM
                         }
-                        
+
                         if (data.cart_empty) {
                             // Show empty cart message and the action buttons will disappear automatically
                             cartItemsContainer.innerHTML = '<div class="empty-cart" id="empty-cart-message"><p>Your cart is empty.</p></div>';

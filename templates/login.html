@@ -1,7 +1,100 @@
 <!DOCTYPE html>
 <html>
-<head><title>Admin Login</title></head>
-<body style="background:black; color:white; padding:20px;">
+<head>
+    <title>Admin Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Add custom CSS styles -->
+    <style>
+        body {
+            background: black;
+            color: white;
+            padding: 20px;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        input[type="password"] {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background-color: #222;
+            color: white;
+            font-size: 1rem;
+        }
+
+        button {
+            padding: 10px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: darkred;
+        }
+
+        /* Mobile responsiveness */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            h2 {
+                font-size: 1.5rem; /* Smaller font size for tablets */
+            }
+
+            form {
+                width: 100%;
+                max-width: 90%;
+            }
+
+            input[type="password"] {
+                font-size: 0.9rem; /* Adjust input size for smaller screens */
+            }
+
+            button {
+                font-size: 1rem; /* Adjust button size */
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+
+            h2 {
+                font-size: 1.2rem; /* Even smaller font size for mobile */
+            }
+
+            form {
+                width: 100%;
+                max-width: 100%;
+                padding: 10px; /* Adjust form padding */
+            }
+
+            input[type="password"], button {
+                font-size: 0.9rem; /* Make input and button smaller on mobile */
+            }
+        }
+    </style>
+</head>
+<body>
     <h2>Admin Login</h2>
     <form method="POST">
         <input type="password" name="password" placeholder="Enter password">

@@ -40,31 +40,59 @@
     .order-box li {
         margin-bottom: 6px;
     }
+
+    @media screen and (max-width: 768px) {
+
+        /* Adjust layout for tablets */
+        body {
+            padding: 10px;
+        }
+
+        .container {
+            width: 100%;
+        }
+
+        /* Add more styles as needed */
+    }
+
+    @media screen and (max-width: 480px) {
+
+        /* Adjust layout for mobile screens */
+        body {
+            padding: 5px;
+        }
+
+        .container {
+            width: 100%;
+        }
+
+        /* Further adjustments for smaller screens */
+    }
 </style>
 
 <div class="orders-wrapper">
     <h1 style="color: red;">Your Orders</h1>
 
     {% if orders %}
-        {% for order in orders %}
-        <div class="order-box">
-            <h3>Order #{{ order.id }}</h3>
-            <p><strong>Date:</strong> {{ order.created_at }}</p>
-            <p><strong>Total:</strong> EGP {{ order.total_price }}</p>
-            <p><strong>Status:</strong> {{ order.status }}</p>
+    {% for order in orders %}
+    <div class="order-box">
+        <h3>Order #{{ order.id }}</h3>
+        <p><strong>Date:</strong> {{ order.created_at }}</p>
+        <p><strong>Total:</strong> EGP {{ order.total_price }}</p>
+        <p><strong>Status:</strong> {{ order.status }}</p>
 
-            <p><strong>Items:</strong></p>
-            <ul>
-                {% for item in order['items'] %}
-                <li>
-                    {{ item.name }} – Size: {{ item.size }}, Quantity: {{ item.quantity }}, Price: EGP {{ item.price }}
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endfor %}
+        <p><strong>Items:</strong></p>
+        <ul>
+            {% for item in order['items'] %}
+            <li>
+                {{ item.name }} – Size: {{ item.size }}, Quantity: {{ item.quantity }}, Price: EGP {{ item.price }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
     {% else %}
-        <p>No orders found for your account.</p>
+    <p>No orders found for your account.</p>
     {% endif %}
 </div>
 

@@ -14,88 +14,127 @@
             color: white;
             margin: 0;
             height: 100vh;
-            overflow: hidden; /* Prevent scrollbars from Lottie or large elements */
-            position: relative; /* Context for potentially fixed background elements */
+            overflow: hidden;
+            /* Prevent scrollbars from Lottie or large elements */
+            position: relative;
+            /* Context for potentially fixed background elements */
             display: flex;
             justify-content: center;
-            align-items: center; /* Centers .content-container vertically and horizontally */
+            align-items: center;
+            /* Centers .content-container vertically and horizontally */
         }
 
         /* New container to manage the positioning of the form and the Lottie animation */
         .content-container {
-            position: relative; /* Establishes positioning context for #lottie-fire */
-            z-index: 1; /* Ensures this content block is above any general background elements */
+            position: relative;
+            /* Establishes positioning context for #lottie-fire */
+            z-index: 1;
+            /* Ensures this content block is above any general background elements */
             display: flex;
-            flex-direction: column; /* Stacks children vertically */
-            align-items: center; /* Centers .login-form horizontally within this container */
-            justify-content: flex-end; /* Pushes .login-form to the bottom of this container */
-            
+            flex-direction: column;
+            /* Stacks children vertically */
+            align-items: center;
+            /* Centers .login-form horizontally within this container */
+            justify-content: flex-end;
+            /* Pushes .login-form to the bottom of this container */
+
             /* Define the overall size of the area where your form and fire are */
             width: 100%;
-            max-width: 450px; /* Max width for the whole visual block (form + surrounding fire) */
-            height: 80vh; /* Make this tall enough to allow the fire to rise significantly */
-            min-height: 500px; /* Ensure a minimum height for the visual effect */
+            max-width: 450px;
+            /* Max width for the whole visual block (form + surrounding fire) */
+            height: 80vh;
+            /* Make this tall enough to allow the fire to rise significantly */
+            min-height: 500px;
+            /* Ensure a minimum height for the visual effect */
             /* Background/shadows can be applied here if you want a larger encompassing block effect */
             /* overflow: hidden; /* Might be needed if Lottie extends too far and causes scroll */
         }
 
         #lottie-fire {
-            position: absolute; /* Positioned relative to .content-container */
-            bottom: -150px; /* Adjust this value: negative moves it further down from the bottom of .content-container */
-            left: 50%; /* Center horizontally relative to .content-container */
-            transform: translateX(-50%); /* Fine-tune horizontal centering */
-            
+            position: absolute;
+            /* Positioned relative to .content-container */
+            bottom: -150px;
+            /* Adjust this value: negative moves it further down from the bottom of .content-container */
+            left: 50%;
+            /* Center horizontally relative to .content-container */
+            transform: translateX(-50%);
+            /* Fine-tune horizontal centering */
+
             /* Adjust width and height to control the scale and spread of the flames */
-            width: 180%; /* Percentage of .content-container's width (e.g., 180% of 450px = 810px) */
-            height: 180%; /* Percentage of .content-container's height (e.g., 180% of 80vh) */
-            
-            z-index: 0; /* Ensures the Lottie animation is behind the login form */
-            pointer-events: none; /* Prevents clicks on the animation from interfering with form */
-            object-fit: cover; /* Scales the animation to cover the container, cropping if necessary */
-            object-position: bottom; /* Crucial: Ensures the bottom part (origin) of the fire animation is visible */
-            opacity: 0.8; /* Makes the fire slightly transparent so text on the form is more readable */
+            width: 180%;
+            /* Percentage of .content-container's width (e.g., 180% of 450px = 810px) */
+            height: 180%;
+            /* Percentage of .content-container's height (e.g., 180% of 80vh) */
+
+            z-index: 0;
+            /* Ensures the Lottie animation is behind the login form */
+            pointer-events: none;
+            /* Prevents clicks on the animation from interfering with form */
+            object-fit: cover;
+            /* Scales the animation to cover the container, cropping if necessary */
+            object-position: bottom;
+            /* Crucial: Ensures the bottom part (origin) of the fire animation is visible */
+            opacity: 0.8;
+            /* Makes the fire slightly transparent so text on the form is more readable */
         }
 
         .login-form {
-            position: relative; /* To ensure it can receive z-index and stay above Lottie */
-            z-index: 2; /* Ensures the login form is rendered on top of the Lottie fire */
+            position: relative;
+            /* To ensure it can receive z-index and stay above Lottie */
+            z-index: 2;
+            /* Ensures the login form is rendered on top of the Lottie fire */
             text-align: center;
-            background: rgba(0, 0, 0, 0.7); /* Semi-transparent black background for the form */
+            background: rgba(0, 0, 0, 0.7);
+            /* Semi-transparent black background for the form */
             padding: 40px 30px;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); /* Soft red glow */
-            max-width: 380px; /* Max width for the form itself */
-            width: 100%; /* Take full width of its parent (.content-container's centered area) */
-            box-sizing: border-box; /* Include padding in width calculation */
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            /* Soft red glow */
+            max-width: 380px;
+            /* Max width for the form itself */
+            width: 100%;
+            /* Take full width of its parent (.content-container's centered area) */
+            box-sizing: border-box;
+            /* Include padding in width calculation */
         }
 
         h2 {
             font-size: 2.2em;
-            color: red; /* Highlighted title */
+            color: red;
+            /* Highlighted title */
             margin-bottom: 25px;
-            text-shadow: 0 0 8px rgba(255, 0, 0, 0.7); /* Subtle text glow */
+            text-shadow: 0 0 8px rgba(255, 0, 0, 0.7);
+            /* Subtle text glow */
         }
 
         input {
-            width: calc(100% - 24px); /* Full width minus padding */
+            width: calc(100% - 24px);
+            /* Full width minus padding */
             padding: 12px;
             margin: 10px 0;
-            border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle white border */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            /* Subtle white border */
             border-radius: 5px;
-            background: rgba(255, 255, 255, 0.1); /* Slightly transparent white input */
+            background: rgba(255, 255, 255, 0.1);
+            /* Slightly transparent white input */
             color: white;
-            outline: none; /* Remove default outline */
+            outline: none;
+            /* Remove default outline */
             transition: border-color 0.3s, box-shadow 0.3s;
         }
 
         input:focus {
-            border-color: red; /* Red border on focus */
-            box-shadow: 0 0 8px rgba(255, 0, 0, 0.7); /* Red glow on focus */
+            border-color: red;
+            /* Red border on focus */
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.7);
+            /* Red glow on focus */
         }
 
         button {
-            width: 100%; /* Make buttons full width of form */
-            padding: 12px 0; /* Adjusted padding */
+            width: 100%;
+            /* Make buttons full width of form */
+            padding: 12px 0;
+            /* Adjusted padding */
             background: red;
             color: white;
             border: none;
@@ -103,24 +142,31 @@
             font-weight: bold;
             cursor: pointer;
             transition: 0.3s;
-            font-size: 1.1em; /* Slightly larger font */
-            margin-top: 15px; /* Space above buttons */
+            font-size: 1.1em;
+            /* Slightly larger font */
+            margin-top: 15px;
+            /* Space above buttons */
         }
 
         button:hover {
-            box-shadow: 0 0 15px red; /* More prominent glow on hover */
-            background: darkred; /* Darken on hover */
+            box-shadow: 0 0 15px red;
+            /* More prominent glow on hover */
+            background: darkred;
+            /* Darken on hover */
         }
 
         .resend-button {
             background: none;
             color: red;
-            font-size: 0.9em; /* Slightly smaller for resend */
+            font-size: 0.9em;
+            /* Slightly smaller for resend */
             border: none;
             cursor: pointer;
             margin-top: 10px;
-            padding: 5px; /* Smaller padding for resend button */
-            width: auto; /* Allow resend button to be smaller than full width */
+            padding: 5px;
+            /* Smaller padding for resend button */
+            width: auto;
+            /* Allow resend button to be smaller than full width */
         }
 
         .resend-button:hover {
@@ -136,24 +182,57 @@
 
         /* --- Updated styles for Home button --- */
         .home-button-container {
-            margin-top: 30px; /* More space from the forms above */
+            margin-top: 30px;
+            /* More space from the forms above */
         }
+
         .home-button-container a {
             display: inline-block;
-            padding: 8px 18px; /* Made smaller */
-            background: black; 
-            color: red; 
-            border: 1px solid red; 
+            padding: 8px 18px;
+            /* Made smaller */
+            background: black;
+            color: red;
+            border: 1px solid red;
             border-radius: 5px;
             text-decoration: none;
             font-weight: bold;
             transition: 0.3s;
-            font-size: 0.95em; /* Adjusted font size */
+            font-size: 0.95em;
+            /* Adjusted font size */
         }
+
         .home-button-container a:hover {
-            background: red; 
+            background: red;
             color: black;
             box-shadow: 0 0 10px red;
+        }
+
+        @media screen and (max-width: 768px) {
+
+            /* Adjust layout for tablets */
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Add more styles as needed */
+        }
+
+        @media screen and (max-width: 480px) {
+
+            /* Adjust layout for mobile screens */
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                width: 100%;
+            }
+
+            /* Further adjustments for smaller screens */
         }
     </style>
 </head>
@@ -201,7 +280,7 @@
             loop: true,
             autoplay: true,
             // Ensure this path is correct for your 'fire.json' file in the static folder
-            path: "{{ url_for('static', filename='fire.json') }}" 
+            path: "{{ url_for('static', filename='fire.json') }}"
         });
     </script>
 </body>

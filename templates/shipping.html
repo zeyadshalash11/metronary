@@ -1,11 +1,63 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shipping Policy | Metro Nary</title>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>body{background:#000;color:#eee;font-family:'Rajdhani',sans-serif;margin:0} .wrap{max-width:900px;margin:100px auto 40px;padding:0 16px} h1{color:#fff} ul{margin-left:18px}</style>
+  <style>
+    body {
+      background: #000;
+      color: #eee;
+      font-family: 'Rajdhani', sans-serif;
+      margin: 0
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 100px auto 40px;
+      padding: 0 16px
+    }
+
+    h1 {
+      color: #fff
+    }
+
+    ul {
+      margin-left: 18px
+    }
+
+    @media screen and (max-width: 768px) {
+
+      /* Adjust layout for tablets */
+      body {
+        padding: 10px;
+      }
+
+      .container {
+        width: 100%;
+      }
+
+      /* Add more styles as needed */
+    }
+
+    @media screen and (max-width: 480px) {
+
+      /* Adjust layout for mobile screens */
+      body {
+        padding: 5px;
+      }
+
+      .container {
+        width: 100%;
+      }
+
+      /* Further adjustments for smaller screens */
+    }
+  </style>
 </head>
+
 <body>
   {% include 'header.html' %}
   <main class="wrap">
@@ -15,10 +67,12 @@
       <li><strong>Delivery windows:</strong> Cairo: 1–3 business days; Other governorates: 2–6 business days.</li>
       <li><strong>Shipping fees:</strong> Cairo: 70 EGP; Other governorates: 150 EGP (or as shown at checkout).</li>
       <li><strong>Tracking:</strong> We provide tracking or delivery confirmation where available.</li>
-      <li><strong>Undeliverable/returns-to-sender:</strong> If a parcel is returned, we’ll contact you to reship (extra fee may apply) or refund minus shipping.</li>
+      <li><strong>Undeliverable/returns-to-sender:</strong> If a parcel is returned, we’ll contact you to reship (extra
+        fee may apply) or refund minus shipping.</li>
       <li><strong>Contact:</strong> Metronary@outlook.com | +20 106 660 8326</li>
     </ul>
   </main>
   {% include 'footer.html' %}
 </body>
+
 </html>

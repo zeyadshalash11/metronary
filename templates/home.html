@@ -414,7 +414,17 @@
         @media screen and (max-width: 1200px) {
             .hero-banner {
                 height: 500px;
-                /* Adjust height for tablets */
+                background-color: #000;
+                /* Fallback color if the image doesn't load */
+                background-size: cover;
+                /* Ensures the image covers the entire area, no white space */
+                background-position: center;
+                /* Centers the image, crucial for responsiveness */
+                background-repeat: no-repeat;
+                /* Prevents the image from tiling on large screens */
+                position: relative;
+                /* Needed if you want to add text or buttons on top later */
+                margin-top: 50px;
                 background-image: url("{{ url_for('static', filename='1200.jpeg') }}");
             }
         }
@@ -424,10 +434,17 @@
         @media (max-width: 768px) {
             .hero-banner {
                 height: 300px;
-                /* Adjust this value for a better mobile height */
-                background-size: contain;
-                /* Optional: Adjusts image behavior */
-                background-position: center top;
+                background-color: #000;
+                /* Fallback color if the image doesn't load */
+                background-size: cover;
+                /* Ensures the image covers the entire area, no white space */
+                background-position: center;
+                /* Centers the image, crucial for responsiveness */
+                background-repeat: no-repeat;
+                /* Prevents the image from tiling on large screens */
+                position: relative;
+                /* Needed if you want to add text or buttons on top later */
+                margin-top: 50px;
                 /* Optional: Centers image vertically as well */
                 background-image: url("{{ url_for('static', filename='1080.jpeg') }}");
                 /* Use a smaller, optimized image for mobile */

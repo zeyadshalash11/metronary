@@ -37,6 +37,7 @@
             margin: 0;
             padding: 0;
             line-height: 1.6;
+            padding-top: 30px;
         }
 
         .main {
@@ -66,8 +67,8 @@
         }
 
         .product-card {
-            border: 1px solid #FF0000;
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
+            border: 1px solid black;
+            box-shadow: 0 0 10px black;
             padding: 18px;
             text-align: center;
             background-color: black;
@@ -385,12 +386,73 @@
 
             /* Further adjustments for smaller screens */
         }
+
+        /* --- HERO BANNER STYLES --- */
+        .hero-banner {
+            width: 100%;
+            /* Make the banner span the full width of the viewport */
+            height: 600px;
+            /* Default height for desktop, matching your 1920x600 request */
+            background-color: #000;
+            /* Fallback color if the image doesn't load */
+            background-size: cover;
+            /* Ensures the image covers the entire area, no white space */
+            background-position: center;
+            /* Centers the image, crucial for responsiveness */
+            background-repeat: no-repeat;
+            /* Prevents the image from tiling on large screens */
+            position: relative;
+            /* Needed if you want to add text or buttons on top later */
+            margin-top: 50px;
+
+            /* --- THIS IS FOR THE DESKTOP IMAGE (1920px wide and up) --- */
+            background-image: url("{{ url_for('static', filename='1920.jpeg') }}");
+        }
+
+        /* --- Media Query for TABLET --- */
+        /* This will apply when the screen width is 1200px or less */
+        @media screen and (max-width: 1200px) {
+            .hero-banner {
+                height: 500px;
+                /* Adjust height for tablets */
+                background-image: url("{{ url_for('static', filename='1200.jpeg') }}");
+            }
+        }
+
+        /* --- Media Query for MOBILE --- */
+        /* This will apply when the screen width is 768px or less */
+        @media (max-width: 768px) {
+            .hero-banner {
+                height: 300px;
+                /* Adjust this value for a better mobile height */
+                background-size: contain;
+                /* Optional: Adjusts image behavior */
+                background-position: center top;
+                /* Optional: Centers image vertically as well */
+                background-image: url("{{ url_for('static', filename='mobile.jpeg') }}");
+                /* Use a smaller, optimized image for mobile */
+            }
+        }
+
+        /* --- [Optional] Styles for text on top of the banner --- */
+        /*
+.hero-text {
+    color: white;
+    text-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.7);
+}
+*/
     </style>
 </head>
 
 <body>
 
     <div id="toast-container"></div> {# ADDED: Container for toast notifications #}
+    <section class="hero-banner"> </section>
 
     {% if not session.get('user_email') %}
     <div id="login-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;

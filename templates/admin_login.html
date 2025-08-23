@@ -51,30 +51,14 @@
 
         #lottie-fire {
             position: absolute;
-            /* Positioned relative to .content-container - UPDATED */
-            bottom: -150px;
-            /* Adjust this value: negative moves it further down from the bottom of .content-container - UPDATED */
+            bottom: -20;
             left: 50%;
-            /* Center horizontally relative to .content-container - UPDATED */
             transform: translateX(-50%);
-            /* Fine-tune horizontal centering - UPDATED */
-
-            /* Adjust width and height to control the scale and spread of the flames - UPDATED */
-            width: 180%;
-            /* Percentage of .content-container's width (e.g., 180% of 450px = 810px) */
-            height: 180%;
-            /* Percentage of .content-container's height (e.g., 180% of 80vh) */
-
+            width: 170%;
+            height: 170%;
             z-index: 0;
-            /* Ensures the Lottie animation is behind the login form - UPDATED */
             pointer-events: none;
-            /* Prevents clicks on the animation from interfering with form - UPDATED */
-            object-fit: cover;
-            /* Scales the animation to cover the container, cropping if necessary - UPDATED */
-            object-position: bottom;
-            /* Crucial: Ensures the bottom part (origin) of the fire animation is visible - UPDATED */
-            opacity: 0.8;
-            /* Makes the fire slightly transparent so text on the form is more readable - UPDATED */
+            opacity: 0.85;
         }
 
         /* Renamed .admin-login-box to .login-form for consistency, or keep original name and apply styles */
@@ -173,31 +157,39 @@
         }
 
         @media screen and (max-width: 768px) {
-
-            /* Adjust layout for tablets */
-            body {
-                padding: 10px;
+            .login-form {
+                padding: 20px 15px;
+                max-width: 90%;
+                /* shrink on tablets */
             }
 
-            .container {
-                width: 100%;
+            h2 {
+                font-size: 1.8em;
             }
 
-            /* Add more styles as needed */
+            input,
+            button {
+                font-size: 1em;
+            }
         }
 
         @media screen and (max-width: 480px) {
-
-            /* Adjust layout for mobile screens */
-            body {
-                padding: 5px;
+            .login-form {
+                padding: 15px 10px;
+                max-width: 95%;
+                /* shrink more on phones */
             }
 
-            .container {
-                width: 100%;
+            h2 {
+                font-size: 1.5em;
+                margin-bottom: 15px;
             }
 
-            /* Further adjustments for smaller screens */
+            input,
+            button {
+                padding: 10px;
+                font-size: 0.95em;
+            }
         }
     </style>
 </head>

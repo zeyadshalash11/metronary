@@ -61,6 +61,18 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Ensure the upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+def serialize_sizes(value):
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return ",".join([str(v).strip() for v in value if v])
+    return str(value).strip()
+
+def deserialize_sizes(value):
+    if not value:
+        return []
+    return [s.strip() for s in value.split(",") if s.strip()]
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -1451,7 +1463,8 @@ def admin():
 
         name = request.form.get('name')
         price = int(request.form.get('price'))
-        sizes = request.form.getlist('sizes')
+        raw_sizes = request.form.getlist('sizes')  
+        sizes = ",".join(raw_sizes) if raw_sizes else ""   
         description = request.form.get('description')
         image_filenames = []
 

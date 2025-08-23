@@ -1451,7 +1451,7 @@ def admin():
 
         name = request.form.get('name')
         price = int(request.form.get('price'))
-        sizes = ','.join(request.form.getlist('sizes'))
+        sizes = request.form.getlist('sizes')
         description = request.form.get('description')
         image_filenames = []
 
@@ -1786,7 +1786,7 @@ def edit_product(product_id):
 
     if request.method == 'POST':
         name = request.form.get('name')
-        price = int(request.form.get('price'))
+        price = float(request.form.get('price'))
         image = request.form.get('image')
         sizes = ','.join(request.form.getlist('sizes'))
         description = request.form.get('description')

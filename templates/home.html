@@ -389,25 +389,49 @@
 
         /* --- HERO BANNER STYLES --- */
         .hero-banner {
-            width: 100%;
-            /* Make the banner span the full width of the viewport */
-            height: 600px;
-            /* Default height for desktop, matching your 1920x600 request */
-            background-color: #000;
-            /* Fallback color if the image doesn't load */
-            background-size: cover;
-            /* Ensures the image covers the entire area, no white space */
-            background-position: center;
-            /* Centers the image, crucial for responsiveness */
-            background-repeat: no-repeat;
-            /* Prevents the image from tiling on large screens */
             position: relative;
-            /* Needed if you want to add text or buttons on top later */
-            margin-top: 50px;
-
-            /* --- THIS IS FOR THE DESKTOP IMAGE (1920px wide and up) --- */
-            background-image: url("{{ url_for('static', filename='1920.jpeg') }}");
+            height: 80vh;
+            background-image: url('{{ url_for("static", filename="1920.jpeg") }}');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: flex-end;
+            /* content goes to bottom */
+            justify-content: flex-start;
+            /* content goes to left */
+            border-radius: 0 0 20px 20px;
+            /* rounded bottom edges */
+            overflow: hidden;
         }
+
+        .hero-overlay {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
+            /* black fade from bottom up */
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            /* push text down */
+            align-items: flex-start;
+            /* align left */
+        }
+
+        .hero-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            margin: 0 0 0.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+            color: #f1f1f1;
+            margin: 0 0 1rem;
+        }
+
 
         /* --- Media Query for TABLET --- */
         /* This will apply when the screen width is 1200px or less */
@@ -450,26 +474,23 @@
                 /* Use a smaller, optimized image for mobile */
             }
         }
+                                 
 
-        /* --- [Optional] Styles for text on top of the banner --- */
-        /*
-.hero-text {
-    color: white;
-    text-align: center;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-shadow: 2px 2px 8px rgba(0,0,0,0.7);
-}
-*/
+        @media (max-width: 992px) {
+            .main {
+                flex-direction: column;
+            }
     </style>
 </head>
 
 <body>
 
     <div id="toast-container"></div> {# ADDED: Container for toast notifications #}
-    <section class="hero-banner"> </section>
+    
+    <section class="hero-banner">
+        <div class="hero-overlay"></div>  
+    </section>
+    
 
     {% if not session.get('user_email') %}
     <div id="login-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;

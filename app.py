@@ -606,29 +606,6 @@ def checkout():
     shipping = 70 if governorate_for_calc == 'cairo' else 120
     total = subtotal + shipping
 
-        # --- Create a new local order every time user lands on checkout ---
-    with sqlite3.connect('store.db') as conn:
-        c = conn.cursor()
-        created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        c.execute('''INSERT INTO orders 
-                     (name, phone, address, building, floor, apartment, governorate, email, 
-                      payment, shipping, total_price, created_at, status)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                  (user_name, user_phone, user_address, user_building, user_floor, user_apartment, 
-                   user_governorate, user_email, "pending", shipping, total, created_at, "Pending Paymob"))
-        order_id = c.lastrowid
-
-        # Save order items
-        for item in cart_items:
-            c.execute('''INSERT INTO order_items 
-                         (order_id, product_id, product_name, quantity, price, size)
-                         VALUES (?, ?, ?, ?, ?, ?)''',
-                      (order_id, item['id'], item['name'], item['quantity'], item['price'], item['size']))
-        conn.commit()
-
-    session['current_order_id'] = order_id
-
-
     return render_template('checkout.html',
                             cart_items=cart_items,
                             subtotal=subtotal,
@@ -675,7 +652,8 @@ def create_payment():
 
     if payment_method_type == 'mobile_wallet' and (not mobile_wallet_number or not mobile_wallet_number.isdigit() or len(mobile_wallet_number) != 11):
         return jsonify({"error": "Valid 11-digit mobile wallet number is required for mobile wallet payments."}), 400
-
+    
+    
     print(f"DEBUG PAYMOB CONFIG: PAYMOB_API_KEY={PAYMOB_API_KEY[:10] + '...' if PAYMOB_API_KEY else 'None'}")
     print(f"DEBUG PAYMOB CONFIG: PAYMOB_MERCHANT_ID={PAYMOB_MERCHANT_ID}")
     print(f"DEBUG PAYMOB CONFIG: PAYMOB_CARD_INTEGRATION_ID={PAYMOB_CARD_INTEGRATION_ID}")
@@ -715,7 +693,7 @@ def create_payment():
     session['cart'] = cleaned_cart
     session.modified = True
     cart_data = cleaned_cart
-
+    
     for key, entry in cart_data.items():
         pid = entry.get('product_id')
         size = entry.get('size')
@@ -733,6 +711,46 @@ def create_payment():
         return jsonify({"error": "No valid items in cart to process."}), 400
 
     shipping_cost = 70 if governorate.strip().lower() in ['cairo', 'giza'] else 140
+    
+    if payment_method_type == 'cash_on_delivery':
+      
+        try:
+            db_path = 'store.db'
+            with sqlite3.connect(db_path) as conn:
+                c = conn.cursor()
+                created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+                # Insert order
+                c.execute('''INSERT INTO orders
+                            (name, phone, address, building, floor, apartment, governorate, email, payment, shipping, total_price, created_at, status)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                        (full_name, phone_number, address, building, floor, apartment, governorate,
+                        email, payment_method_type, shipping_cost, amount, created_at, 'Pending Cash'))
+                order_id = c.lastrowid
+
+                # Insert order items
+                for item in cart_items_for_db:
+                    c.execute('''INSERT INTO order_items (order_id, product_id, product_name, quantity, price, size)
+                                VALUES (?, ?, ?, ?, ?, ?)''',
+                            (order_id, item['product_id'], item['name'], item['quantity'], item['price'], item['size']))
+                conn.commit()
+
+            session['cart'] = {}  # clear cart
+            session['current_order_id'] = order_id
+            
+            return jsonify({
+                "success": True,
+                "payment_url": None,
+                "order_id": order_id,
+                "message": "Cash on Delivery order placed successfully."
+            })
+
+        except Exception as e:
+            print(f"Error saving COD order: {e}")
+            return jsonify({"error": "Failed to place Cash on Delivery order."}), 500
+
+        
+
 
     # ----------------------------
     # 1) create or reuse local order
@@ -883,7 +901,14 @@ def create_payment():
         # ----------------------------
         integration_id = PAYMOB_CARD_INTEGRATION_ID if payment_method_type == 'card' else PAYMOB_MOBILE_WALLET_INTEGRATION_ID
         print(f"DEBUG: Using Integration ID: {integration_id} for payment type: {payment_method_type}")
-
+        
+        if payment_method_type == 'card':
+           integration_id = PAYMOB_CARD_INTEGRATION_ID
+        elif payment_method_type == 'mobile_wallet':
+           integration_id = PAYMOB_MOBILE_WALLET_INTEGRATION_ID
+        else:
+          return jsonify({"error": "Invalid payment method type"}), 400
+        
         payment_key_payload = {
             "auth_token": auth_token,
             "amount_cents": amount_cents,
@@ -929,6 +954,7 @@ def create_payment():
         final_redirect_url = None
         if payment_method_type == 'card':
             final_redirect_url = f"https://accept.paymobsolutions.com/api/acceptance/iframes/{PAYMOB_IFRAME_ID}?payment_token={payment_key}"
+        
         elif payment_method_type == 'mobile_wallet':
             wallet_initiation_payload = {
                 "payment_token": payment_key,
@@ -944,11 +970,13 @@ def create_payment():
                 verify=certifi.where()
             )
             wallet_initiation_response.raise_for_status()
+            wallet_redirect = wallet_initiation_response.json().get('redirect_url')
             print("DEBUG Full wallet response:", wallet_initiation_response.json())
-            final_redirect_url = wallet_initiation_response.json().get('redirect_url')
-            if not final_redirect_url:
-                raise Exception(f"Paymob did not provide a redirect_url for mobile wallet. Response: {wallet_initiation_response.text}")
-            print(f"Mobile Wallet Redirect URL: {final_redirect_url}")
+            
+            if not wallet_redirect:
+                raise Exception(f"No redirect_url returned by Paymob for mobile wallet. Response: {wallet_initiation_response.text}")
+    
+            final_redirect_url = wallet_redirect
         else:
             return jsonify({"error": "Invalid payment method type"}), 400
 
@@ -982,8 +1010,6 @@ def create_payment():
                 conn.commit()
         return jsonify({"error": "An internal server error occurred during payment initiation."}), 500
 
-
-
 @app.route('/paymob_webhook', methods=['POST'])
 def paymob_webhook():
     try:
@@ -1005,40 +1031,41 @@ def paymob_webhook():
 
         # EXACT order for transaction_processed webhook HMAC
         fields = [
-            norm(obj.get("amount_cents")),
-            norm(obj.get("created_at")),
-            norm(obj.get("currency")),
-            norm(obj.get("error_occured")),
-            norm(obj.get("has_parent_transaction")),
-            norm(obj.get("id")),
-            norm(obj.get("integration_id")),
-            norm(obj.get("is_3d_secure")),
-            norm(obj.get("is_auth")),
-            norm(obj.get("is_capture")),
-            norm(obj.get("is_refunded")),
-            norm(obj.get("is_standalone_payment")),
-            norm(obj.get("is_voided")),
-            norm(obj.get("order", {}).get("id")),
-            norm(obj.get("owner")),
-            norm(obj.get("pending")),
-            norm(obj.get("source_data", {}).get("pan")),
-            norm(obj.get("source_data", {}).get("sub_type")),
-            norm(obj.get("source_data", {}).get("type")),
-            norm(obj.get("profile_id")),
-            norm(obj.get("refunded_amount_cents")),
-            norm(obj.get("merchant_commission")),
-            norm(obj.get("is_refund")),
-            norm(obj.get("captured_amount")),
-            norm(obj.get("is_void")),
-            norm(obj.get("is_settled")),
-            norm(obj.get("bill_balanced")),
-            norm(obj.get("is_bill")),
-            norm(obj.get("discount_details")),
-            norm(obj.get("data", {}).get("message")),
-            norm(obj.get("acq_response_code")),
-            norm(obj.get("txn_response_code")),
-            norm(obj.get("updated_at")), 
+           norm(obj.get("amount_cents")),
+           norm(obj.get("created_at")),
+           norm(obj.get("currency")),
+           norm(obj.get("error_occured")),
+           norm(obj.get("has_parent_transaction")),
+           norm(obj.get("id")),
+           norm(obj.get("integration_id")),
+           norm(obj.get("is_3d_secure")),
+           norm(obj.get("is_auth")),
+           norm(obj.get("is_capture")),
+           norm(obj.get("is_refunded")),
+           norm(obj.get("is_standalone_payment")),
+           norm(obj.get("is_voided")),
+           norm(obj.get("is_void")),
+           norm(obj.get("is_settled")),
+           norm(obj.get("pending")),
+           norm(obj.get("source_data", {}).get("pan")),
+           norm(obj.get("source_data", {}).get("sub_type")),
+           norm(obj.get("source_data", {}).get("type")),
+           norm(obj.get("profile_id")),
+           norm(obj.get("refunded_amount_cents")),
+           norm(obj.get("merchant_commission")),
+           norm(obj.get("discount_details")),
+           norm(obj.get("is_refund")),
+           norm(obj.get("captured_amount")),
+           norm(obj.get("order", {}).get("id")),
+           norm(obj.get("owner")),
+           norm(obj.get("bill_balanced")),
+           norm(obj.get("is_bill")),
+           norm(obj.get("data", {}).get("message")),
+           norm(obj.get("acq_response_code")),
+           norm(obj.get("txn_response_code")),
+           norm(obj.get("updated_at")),
         ]
+
 
         data_string = ''.join(fields)
 
@@ -1058,7 +1085,7 @@ def paymob_webhook():
         print("✅ HMAC verification successful.")
 
         # Update DB
-        transaction_status = "Paid" if obj.get("success") else "Failed"
+        transaction_status = "Paid" if str(obj.get("success")).lower() == "true" else "Failed"
         paymob_transaction_id = obj.get("id")
         merchant_order_id = obj.get("order", {}).get("merchant_order_id")
 
@@ -1066,7 +1093,7 @@ def paymob_webhook():
             print("❌ Missing merchant_order_id in webhook payload.")
             return jsonify({"status": "error", "message": "Missing merchant_order_id"}), 400
 
-        local_order_id = merchant_order_id.split('-', 1)[0] if '-' in merchant_order_id else merchant_order_id
+        local_order_id = str(merchant_order_id).split('-', 1)[0]
 
         try:
             with sqlite3.connect("store.db") as conn:
@@ -1126,9 +1153,21 @@ def payment_status():
     paymob_transaction_id = paymob_response.get('id', [''])[0]
     integration_id = paymob_response.get('integration_id', [''])[0]
 
-    # Cash on Delivery?
-    is_cash_on_delivery = (paymob_transaction_id == 'N/A (Cash)')
+    id_field = paymob_response.get('id', [''])[0]
 
+    # Treat both 'N/A' and 'N/A (Cash)' as COD
+    is_cash_on_delivery = paymob_transaction_id in ['N/A', 'N/A (Cash)'] or id_field in ['N/A', 'N/A (Cash)']
+
+    if is_cash_on_delivery:
+      print("DEBUG: COD order detected. Skipping HMAC verification.")
+      paymob_success = True
+      paymob_pending = False
+      paymob_message = paymob_response.get('data', {}).get('message', ['Cash on Delivery Order Placed.'])[0] \
+                       or paymob_response.get('message', ['Cash on Delivery Order Placed.'])[0]
+      calc_hmac = recv_hmac = None
+    
+
+    # ---- Extract status flags from response ----
     if not is_cash_on_delivery:
         # ---- HMAC verification ----
         def norm(v):
@@ -1138,37 +1177,35 @@ def payment_status():
             if s in ['True', 'False']:
                 return s.lower()
             return s
+        
+        def flatten_dict(d, parent_key='', sep='.'):
+            items = {}
+            for k, v in d.items():
+               new_key = f"{parent_key}{sep}{k}" if parent_key else k
+               if isinstance(v, dict):
+                   items.update(flatten_dict(v, new_key, sep=sep))
+               
+               else:
+                    # Convert None to empty string
+                    items[new_key] = '' if v is None else str(v)
+            return items
 
-        # Correct key order for Paymob redirect HMAC
-        ordered_keys = [
-           'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
-           'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
-           'is_standalone_payment', 'is_voided', 'order', 'owner', 'pending',
-           'source_data.pan', 'source_data.sub_type', 'source_data.type', 'profile_id',
-           'refunded_amount_cents', 'merchant_commission', 'discount_details', 
-           'is_refund', 'captured_amount', 'is_void', 'is_settled', 'bill_balanced', 'is_bill'
-        ]
+        # Flatten the response
+        flat_response = flatten_dict(paymob_response)
 
+        # Sort keys alphabetically (Paymob requires this)
+        sorted_keys = sorted(flat_response.keys())
 
+        # Concatenate all values
+        data_string = ''.join(flat_response[k] for k in sorted_keys)
 
-        # Helper to get nested source_data and order.id
-        def get_hmac_value(key):
-            if key.startswith('source_data.'):
-                subkey = key.split('.', 1)[1]
-                return norm(paymob_response.get(f'source_data.{subkey}', [''])[0])
-            if key == 'order':
-                # Paymob sends order id as 'order' query param (numeric)
-                return norm(paymob_response.get('order', [''])[0])
-            return norm(paymob_response.get(key, [''])[0])
-
-        pieces = [get_hmac_value(k) for k in ordered_keys]
-        data_string = ''.join(pieces)
-
+        # Calculate HMAC
         calc_hmac = hmac.new(
             PAYMOB_HMAC_SECRET.encode('utf-8'),
             data_string.encode('utf-8'),
             hashlib.sha512
         ).hexdigest().lower()
+
 
         recv_hmac = paymob_response.get('hmac', [''])[0].lower()
 
@@ -1187,13 +1224,19 @@ def payment_status():
                 db_status="HMAC Mismatch"
             )
         print("DEBUG: payment_status: HMAC verification successful.")
+
+        paymob_success = paymob_response.get('success', ['false'])[0] == 'true'
+        paymob_pending = paymob_response.get('pending', ['false'])[0] == 'true'
+        paymob_message = paymob_response.get('data', {}).get('message', [''])[0] or paymob_response.get('message', [''])[0]
+
     else:
         print("DEBUG: payment_status: Skipping HMAC verification for COD order.")
-
-    # ---- Extract status flags ----
-    paymob_success = paymob_response.get('success', ['false'])[0] == 'true'
-    paymob_pending = paymob_response.get('pending', ['false'])[0] == 'true'
-    paymob_message = paymob_response.get('data.message', [''])[0] or paymob_response.get('message', [''])[0]
+        # COD treated as successful
+        paymob_success = True
+        paymob_pending = False
+        paymob_message = "Cash on Delivery Order Placed."
+        calc_hmac = recv_hmac = None
+        print("DEBUG: COD order treated as successful.")
 
     db_status = 'Failed'
     message_to_user = "Your payment could not be processed."
@@ -1248,6 +1291,7 @@ def payment_status():
                         c.execute("UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ?",
                                   (db_status, paymob_transaction_id, local_order_id))
                         conn.commit()
+
                     else:
                         db_status = 'Failed'
                         message_to_user = f"Your payment failed: {paymob_message}. Please try again."
@@ -1277,12 +1321,10 @@ def payment_status():
         success=(paymob_success and not paymob_pending) or is_cash_on_delivery,
         message=message_to_user,
         name=customer_name,
-        merchant_order_id=merchant_order_id,        
+        merchant_order_id=merchant_order_id,
         paymob_transaction_id=paymob_transaction_id,
         db_status=db_status
     )
-
-
 
 
 @app.route('/complete_checkout', methods=['POST'])
@@ -1471,14 +1513,15 @@ def complete_checkout():
         print("✅ Order committed to database")
         
         session.pop('cart', None) # Clear the cart after successful order
-
+        session.pop('current_order_id', None) 
+        
         flash("Your order has been placed successfully!", "success")
 
         # --- Send order confirmation emails ---
         # Ensure send_order_email function is defined and configured to work
         try:
             send_order_email(
-                email,
+                email or "N/A",
                 "Metro Nary – Your Order Has Been Received",
                 f"""
                 <h2 style='color:#ff0000;'>Thank you for your order, {name}!</h2>

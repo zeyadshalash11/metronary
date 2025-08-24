@@ -545,14 +545,13 @@
         function updateShippingAndTotal() {
             const selectedGovernorate = governorateSelect.value;
             let currentShipping = 0;
-            if (selectedGovernorate.toLowerCase() === 'cairo') {
+            if (selectedGovernorate.toLowerCase() === 'giza') {
                 currentShipping = 70;
-            } else if (selectedGovernorate !== '') { // Only apply 120 if a valid non-Cairo governorate is selected
-                currentShipping = 120;
+            } else if (selectedGovernorate.toLowerCase() === 'cairo') {
+                currentShipping = 100;
+            } else if (selectedGovernorate !== '') {
+                currentShipping = 150;
             }
-            // If no governorate is selected, shipping might remain 0 or default to something else,
-            // depending on your initial requirements. For now, it will be 0 if empty.
-
             shippingAmountSpan.textContent = `E£${currentShipping}`;
 
             // Get current subtotal from the span

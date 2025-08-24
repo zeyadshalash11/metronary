@@ -7,19 +7,19 @@ from flask import Flask, jsonify, render_template, request, redirect, url_for, s
 from dotenv import load_dotenv
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-# Import all table creation functions from database.py
 from database import create_orders_table, create_products_table, create_faqs_table
 from datetime import datetime
 
 from werkzeug.security import check_password_hash 
 from werkzeug.utils import secure_filename 
+from flask import request
 
 import hmac
 import hashlib
 import ssl
 import certifi
 import json
-
+import time
 
 
 # --- Configuration for file uploads ---
@@ -36,8 +36,8 @@ app = Flask(__name__)
 ssl._create_default_https_context = ssl._create_unverified_context
 
 
-load_dotenv()  # Load the default .env file
-load_dotenv('.env')  # Load api.env for SendGrid keys
+load_dotenv()  
+load_dotenv('.env')  
 
 # --- Paymob API Configuration (Loaded from .env) ---
 PAYMOB_API_KEY = os.getenv("PAYMOB_API_KEY")
@@ -126,6 +126,7 @@ def load_products():
         
     conn.close()
     return products
+
 def get_cart_totals():
     """Helper function to calculate cart totals for AJAX responses."""
     cart_data = session.get('cart', {})
@@ -204,6 +205,19 @@ def send_order_email(to, subject, html_content):
     except Exception as e:
         print(f"❌ Email error: {e}")
 
+def verify_hmac(payload, secret):
+    received_hmac = payload.pop('hmac', None)
+    # 1. Sort keys alphabetically
+    sorted_keys = sorted(payload.keys())
+    # 2. Concatenate values as strings
+    message = ''.join(str(payload[k]) for k in sorted_keys)
+    # 3. Compute HMAC SHA512
+    calculated_hmac = hmac.new(
+        bytes(secret, 'utf-8'),
+        msg=bytes(message, 'utf-8'),
+        digestmod=hashlib.sha512
+    ).hexdigest()
+    return calculated_hmac == received_hmac
 
 # --- ROUTES ---
 
@@ -592,6 +606,29 @@ def checkout():
     shipping = 70 if governorate_for_calc == 'cairo' else 120
     total = subtotal + shipping
 
+        # --- Create a new local order every time user lands on checkout ---
+    with sqlite3.connect('store.db') as conn:
+        c = conn.cursor()
+        created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        c.execute('''INSERT INTO orders 
+                     (name, phone, address, building, floor, apartment, governorate, email, 
+                      payment, shipping, total_price, created_at, status)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                  (user_name, user_phone, user_address, user_building, user_floor, user_apartment, 
+                   user_governorate, user_email, "pending", shipping, total, created_at, "Pending Paymob"))
+        order_id = c.lastrowid
+
+        # Save order items
+        for item in cart_items:
+            c.execute('''INSERT INTO order_items 
+                         (order_id, product_id, product_name, quantity, price, size)
+                         VALUES (?, ?, ?, ?, ?, ?)''',
+                      (order_id, item['id'], item['name'], item['quantity'], item['price'], item['size']))
+        conn.commit()
+
+    session['current_order_id'] = order_id
+
+
     return render_template('checkout.html',
                             cart_items=cart_items,
                             subtotal=subtotal,
@@ -627,6 +664,12 @@ def create_payment():
     governorate = data.get('governorate')
     mobile_wallet_number = data.get('mobile_wallet_number')
 
+    # Fallback: split full_name if first/last missing
+    if not first_name or not last_name:
+        parts = (full_name or "").strip().split(" ", 1)
+        first_name = first_name or (parts[0] if parts and parts[0] else "NA")
+        last_name = last_name or (parts[1] if len(parts) > 1 else "NA")
+
     if not all([amount, payment_method_type, email, full_name, phone_number, address, building, floor, apartment, governorate]):
         return jsonify({"error": "Missing required payment or delivery information."}), 400
 
@@ -646,6 +689,8 @@ def create_payment():
         return jsonify({"error": "Server configuration error. Please contact support."}), 500
 
     amount_cents = int(float(amount) * 100)
+
+    # Normalize/merge cart in session exactly like your original code …
     cart_data = session.get('cart', {})
     if not cart_data:
         return jsonify({"error": "Your cart is empty. Cannot create payment."}), 400
@@ -659,22 +704,14 @@ def create_payment():
                 pid_str, size = key.split('_')
             except ValueError:
                 pid_str, size = key, 'Unknown'
-            value = {
-                'product_id': int(pid_str),
-                'size': size,
-                'quantity': value
-            }
+            value = {'product_id': int(pid_str), 'size': size, 'quantity': value}
         pid = value['product_id']
         size = value.get('size', 'Unknown')
         new_key = f"{pid}_{size}"
         if new_key in cleaned_cart:
             cleaned_cart[new_key]['quantity'] += value['quantity']
         else:
-            cleaned_cart[new_key] = {
-                'product_id': pid,
-                'size': size,
-                'quantity': value['quantity']
-            }
+            cleaned_cart[new_key] = {'product_id': pid, 'size': size, 'quantity': value['quantity']}
     session['cart'] = cleaned_cart
     session.modified = True
     cart_data = cleaned_cart
@@ -696,38 +733,63 @@ def create_payment():
         return jsonify({"error": "No valid items in cart to process."}), 400
 
     shipping_cost = 70 if governorate.strip().lower() in ['cairo', 'giza'] else 140
+
+    # ----------------------------
+    # 1) create or reuse local order
+    # ----------------------------
     order_id = None
+    paymob_order_id = None
+    db_path = 'store.db'  # ensure your migration ran on THIS file
     try:
-        with sqlite3.connect('store.db') as conn:
+        existing_order_id = session.get('current_order_id')
+        order_id = None
+        paymob_order_id = None
+       
+        with sqlite3.connect(db_path) as conn:
             c = conn.cursor()
-            created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            c.execute('''INSERT INTO orders (name, phone, address, building, floor, apartment, governorate, email, payment, shipping, total_price, created_at, status)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                      (full_name, phone_number, address, building, floor, apartment, governorate, email,
-                       payment_method_type, shipping_cost, amount, created_at, 'Pending Paymob'))
-            order_id = c.lastrowid
+            if existing_order_id:
+                c.execute("SELECT status, paymob_order_id FROM orders WHERE id = ?", (existing_order_id,))
+                row = c.fetchone()
 
-            c.execute('''
-                CREATE TABLE IF NOT EXISTS order_items (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    order_id INTEGER NOT NULL,
-                    product_id INTEGER NOT NULL,
-                    product_name TEXT NOT NULL,
-                    quantity INTEGER NOT NULL,
-                    price REAL NOT NULL,
-                    size TEXT,
-                    FOREIGN KEY (order_id) REFERENCES orders(id),
-                    FOREIGN KEY (product_id) REFERENCES products(id)
-                )
-            ''')
-            conn.commit()
+                if row and row[0] in ('Pending Paymob', 'Paymob API Failed', 'Payment Initiation Error'):
+                    order_id = existing_order_id
+                    paymob_order_id = row[1]
+                else:
+                # Already paid or completed → clear session
+                 session.pop('current_order_id', None)    
 
-            for item in cart_items_for_db:
-                c.execute('''INSERT INTO order_items (order_id, product_id, product_name, quantity, price, size)
-                             VALUES (?, ?, ?, ?, ?, ?)''',
-                          (order_id, item['product_id'], item['name'], item['quantity'], item['price'], item['size']))
-            conn.commit()
-        print(f"Order {order_id} saved to DB with status: Pending Paymob")
+            if not order_id:
+                # Insert a brand-new local order
+                created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                c.execute('''INSERT INTO orders (name, phone, address, building, floor, apartment, governorate, email, payment, shipping, total_price, created_at, status)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                          (full_name, phone_number, address, building, floor, apartment, governorate, email,
+                           payment_method_type, shipping_cost, amount, created_at, 'Pending Paymob'))
+                order_id = c.lastrowid
+
+                # Ensure order_items table exists
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS order_items (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        order_id INTEGER NOT NULL,
+                        product_id INTEGER NOT NULL,
+                        product_name TEXT NOT NULL,
+                        quantity INTEGER NOT NULL,
+                        price REAL NOT NULL,
+                        size TEXT,
+                        FOREIGN KEY (order_id) REFERENCES orders(id),
+                        FOREIGN KEY (product_id) REFERENCES products(id)
+                    )
+                ''')
+                # Insert items
+                for item in cart_items_for_db:
+                    c.execute('''INSERT INTO order_items (order_id, product_id, product_name, quantity, price, size)
+                                 VALUES (?, ?, ?, ?, ?, ?)''',
+                              (order_id, item['product_id'], item['name'], item['quantity'], item['price'], item['size']))
+                conn.commit()
+
+        session['current_order_id'] = order_id
+        print(f"Order {order_id} saved/reused with status: Pending Paymob (existing Paymob order: {paymob_order_id})")
 
     except sqlite3.Error as e:
         print(f"Database error when saving order: {e}")
@@ -736,6 +798,9 @@ def create_payment():
         print(f"An unexpected error occurred during order saving: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
+    # ----------------------------
+    # 2) Auth with Paymob
+    # ----------------------------
     try:
         auth_response = requests.post(
             f"{PAYMOB_BASE_URL}/auth/tokens",
@@ -746,43 +811,78 @@ def create_payment():
         auth_token = auth_response.json()['token']
         print(f"Paymob Auth Token: {auth_token[:10]}...")
 
-        order_registration_payload = {
-            "auth_token": auth_token,
-            "delivery_needed": "false",
-            "merchant_id": PAYMOB_MERCHANT_ID,
-            "amount_cents": amount_cents,
-            "currency": currency,
-            "merchant_order_id": str(order_id),
-            "items": [
-                {"name": item['name'], "amount_cents": int(item['price'] * 100), "description": item['name'], "quantity": str(item['quantity'])}
-                for item in cart_items_for_db
-            ],
-            "shipping_data": {
-                "apartment": apartment, "email": email, "floor": floor,
-                "first_name": first_name, "street": address, "building": building,
-                "phone_number": phone_number, "postal_code": "NA",
-                "extra_description": "NA", "city": governorate, "country": "EG",
-                "last_name": last_name, "state": governorate
-            }
-        }
-        order_response = requests.post(
-            f"{PAYMOB_BASE_URL}/ecommerce/orders",
-            json=order_registration_payload,
-            verify=certifi.where()
-        )
-        order_response.raise_for_status()
-        paymob_order_id = order_response.json()['id']
-        print(f"Paymob Order registered. Paymob Order ID: {paymob_order_id}")
-
-        with sqlite3.connect('store.db') as conn:
+        # ----------------------------
+        # 3) Register Paymob order (idempotent)
+        #    - Only if we don't already have one for this local order
+        # ----------------------------
+        with sqlite3.connect(db_path) as conn:
             c = conn.cursor()
-            c.execute("UPDATE orders SET paymob_order_id = ? WHERE id = ?", (paymob_order_id, order_id))
-            conn.commit()
+            if not paymob_order_id:
+                merchant_order_id = f"{order_id}-{int(time.time())}"  # our canonical link
+                order_registration_payload = {
+                    "auth_token": auth_token,
+                    "delivery_needed": "false",
+                    "merchant_id": PAYMOB_MERCHANT_ID,
+                    "amount_cents": amount_cents,
+                    "currency": currency,
+                    "merchant_order_id": merchant_order_id,
+                    "items": [
+                        {"name": item['name'], "amount_cents": int(item['price'] * 100), "description": item['name'], "quantity": str(item['quantity'])}
+                        for item in cart_items_for_db
+                    ],
+                    "shipping_data": {
+                        "apartment": apartment, "email": email, "floor": floor,
+                        "first_name": first_name, "street": address, "building": building,
+                        "phone_number": phone_number, "postal_code": "NA",
+                        "extra_description": "NA", "city": governorate, "country": "EG",
+                        "last_name": last_name, "state": governorate
+                    }
+                }
 
+                # Save merchant order id we intend to use
+                c.execute("UPDATE orders SET paymob_merchant_order_id = ? WHERE id = ?", (merchant_order_id, order_id))
+                conn.commit()
+
+                try:
+                    order_response = requests.post(
+                        f"{PAYMOB_BASE_URL}/ecommerce/orders",
+                        json=order_registration_payload,
+                        verify=certifi.where()
+                    )
+                    order_response.raise_for_status()
+                    paymob_order_id = order_response.json()['id']
+                    print(f"Paymob Order registered. Paymob Order ID: {paymob_order_id}")
+                except requests.exceptions.HTTPError as e:
+                    # Self-heal only for duplicate merchant_order_id
+                    dup = (e.response.status_code == 422 and 'duplicate' in e.response.text.lower())
+                    if dup:
+                        alt_merchant_id = f"{order_id}-{int(datetime.now().timestamp())}"
+                        print(f"Got duplicate merchant_order_id. Retrying once with {alt_merchant_id}")
+                        order_registration_payload["merchant_order_id"] = alt_merchant_id
+                        # Record the new merchant id we’re going to use
+                        c.execute("UPDATE orders SET paymob_merchant_order_id = ? WHERE id = ?", (alt_merchant_id, order_id))
+                        conn.commit()
+
+                        order_response = requests.post(
+                            f"{PAYMOB_BASE_URL}/ecommerce/orders",
+                            json=order_registration_payload,
+                            verify=certifi.where()
+                        )
+                        order_response.raise_for_status()
+                        paymob_order_id = order_response.json()['id']
+                        print(f"Paymob Order registered after retry. Paymob Order ID: {paymob_order_id}")
+                    else:
+                        raise
+
+                # Persist the Paymob order id
+                c.execute("UPDATE orders SET paymob_order_id = ? WHERE id = ?", (paymob_order_id, order_id))
+                conn.commit()
+
+        # ----------------------------
+        # 4) Generate payment key
+        # ----------------------------
         integration_id = PAYMOB_CARD_INTEGRATION_ID if payment_method_type == 'card' else PAYMOB_MOBILE_WALLET_INTEGRATION_ID
         print(f"DEBUG: Using Integration ID: {integration_id} for payment type: {payment_method_type}")
-
-        redirection_url = f"https://metronary.store/payment_status"
 
         payment_key_payload = {
             "auth_token": auth_token,
@@ -798,8 +898,7 @@ def create_payment():
             },
             "currency": currency,
             "integration_id": integration_id,
-            "lock_order_locked": "false",
-            "wallets_callback": redirection_url
+            "lock_order_when_paid": "false"
         }
 
         if payment_method_type == 'mobile_wallet':
@@ -818,6 +917,15 @@ def create_payment():
         payment_key = payment_key_response.json()['token']
         print(f"Payment key generated: {payment_key[:10]}...")
 
+        # Save last payment key
+        with sqlite3.connect(db_path) as conn:
+            c = conn.cursor()
+            c.execute("UPDATE orders SET paymob_last_payment_key = ? WHERE id = ?", (payment_key, order_id))
+            conn.commit()
+
+        # ----------------------------
+        # 5) Build redirect URL or initiate wallet pay
+        # ----------------------------
         final_redirect_url = None
         if payment_method_type == 'card':
             final_redirect_url = f"https://accept.paymobsolutions.com/api/acceptance/iframes/{PAYMOB_IFRAME_ID}?payment_token={payment_key}"
@@ -829,23 +937,23 @@ def create_payment():
                     "subtype": "WALLET"
                 }
             }
-            print(f"DEBUG: Mobile Wallet Initiation Payload: {json.dumps(wallet_initiation_payload, indent=2)}")
+            print("DEBUG: Mobile Wallet Initiation Payload:", json.dumps(wallet_initiation_payload, indent=2))
             wallet_initiation_response = requests.post(
                 f"{PAYMOB_BASE_URL}/acceptance/payments/pay",
                 json=wallet_initiation_payload,
                 verify=certifi.where()
             )
             wallet_initiation_response.raise_for_status()
-            
             print("DEBUG Full wallet response:", wallet_initiation_response.json())
             final_redirect_url = wallet_initiation_response.json().get('redirect_url')
             if not final_redirect_url:
                 raise Exception(f"Paymob did not provide a redirect_url for mobile wallet. Response: {wallet_initiation_response.text}")
-            print(f"DEBUG: Mobile Wallet Initiation Response: {wallet_initiation_response.text}")
             print(f"Mobile Wallet Redirect URL: {final_redirect_url}")
         else:
             return jsonify({"error": "Invalid payment method type"}), 400
 
+        # Optional: don’t clear the whole cart until success callback;
+        # for now we’ll match your original behaviour:
         session['cart'] = {}
         session.modified = True
 
@@ -860,7 +968,7 @@ def create_payment():
         print(f"Paymob API HTTP Error: {e.response.status_code} - {e.response.text}")
         traceback.print_exc()
         if order_id:
-            with sqlite3.connect('store.db') as conn:
+            with sqlite3.connect(db_path) as conn:
                 c = conn.cursor()
                 c.execute("UPDATE orders SET status = ? WHERE id = ?", ('Paymob API Failed', order_id))
                 conn.commit()
@@ -868,7 +976,7 @@ def create_payment():
     except Exception as e:
         print(f"An unexpected error occurred during payment initiation: {e}")
         if order_id:
-            with sqlite3.connect('store.db') as conn:
+            with sqlite3.connect(db_path) as conn:
                 c = conn.cursor()
                 c.execute("UPDATE orders SET status = ? WHERE id = ?", ('Payment Initiation Error', order_id))
                 conn.commit()
@@ -878,90 +986,109 @@ def create_payment():
 
 @app.route('/paymob_webhook', methods=['POST'])
 def paymob_webhook():
-    """
-    Handles incoming webhook notifications from Paymob.
-    This endpoint will receive real-time updates about transaction status
-    and update your SQLite order database.
-    """
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         print(f"Received Paymob Webhook: {json.dumps(data, indent=2)}")
 
-        # Verify HMAC signature for security
-        # IMPORTANT: The fields for HMAC calculation must be exactly as specified by Paymob.
-        # This is for 'transaction_processed' callback.
-        obj = data['obj']
-        amount_cents = str(obj.get('amount_cents'))
-        created_at = str(obj.get('created_at'))
-        currency = str(obj.get('currency'))
-        error_occured = str(obj.get('error_occured'))
-        has_parent_transaction = str(obj.get('has_parent_transaction'))
-        transaction_id = str(obj.get('id')) # Paymob's transaction ID
-        integration_id = str(obj.get('integration_id'))
-        is_3d_secure = str(obj.get('is_3d_secure'))
-        is_auth = str(obj.get('is_auth'))
-        is_capture = str(obj.get('is_capture'))
-        is_refunded = str(obj.get('is_refunded'))
-        is_standalone_payment = str(obj.get('is_standalone_payment'))
-        is_voided = str(obj.get('is_voided'))
-        paymob_order_id = str(obj.get('order', {}).get('id')) # Paymob's order ID
-        owner = str(obj.get('owner'))
-        pending = str(obj.get('pending'))
-        source_data_pan = str(obj.get('source_data', {}).get('pan'))
-        source_data_sub_type = str(obj.get('source_data', {}).get('sub_type'))
-        source_data_type = str(obj.get('source_data', {}).get('type'))
-        success = str(obj.get('success'))
+        obj = data.get("obj", {})
+        received_hmac = (data.get("hmac") or "").lower()
 
-        # Construct the data string for HMAC calculation (alphabetical order)
-        data_string = (
-            amount_cents + created_at + currency + error_occured +
-            has_parent_transaction + transaction_id + integration_id +
-            is_3d_secure + is_auth + is_capture + is_refunded +
-            is_standalone_payment + is_voided + paymob_order_id + owner +
-            pending + source_data_pan + source_data_sub_type +
-            source_data_type + success
-        )
+        def norm(v):
+            if v is None:
+                return ''
+            if isinstance(v, bool):
+                return 'true' if v else 'false'
+            s = str(v)
+            if s in ['True', 'False']:
+                return s.lower()
+            return s
 
-        hashed_string = hmac.new(
-            PAYMOB_HMAC_SECRET.encode('utf-8'),
-            data_string.encode('utf-8'),
+        # EXACT order for transaction_processed webhook HMAC
+        fields = [
+            norm(obj.get("amount_cents")),
+            norm(obj.get("created_at")),
+            norm(obj.get("currency")),
+            norm(obj.get("error_occured")),
+            norm(obj.get("has_parent_transaction")),
+            norm(obj.get("id")),
+            norm(obj.get("integration_id")),
+            norm(obj.get("is_3d_secure")),
+            norm(obj.get("is_auth")),
+            norm(obj.get("is_capture")),
+            norm(obj.get("is_refunded")),
+            norm(obj.get("is_standalone_payment")),
+            norm(obj.get("is_voided")),
+            norm(obj.get("order", {}).get("id")),
+            norm(obj.get("owner")),
+            norm(obj.get("pending")),
+            norm(obj.get("source_data", {}).get("pan")),
+            norm(obj.get("source_data", {}).get("sub_type")),
+            norm(obj.get("source_data", {}).get("type")),
+            norm(obj.get("profile_id")),
+            norm(obj.get("refunded_amount_cents")),
+            norm(obj.get("merchant_commission")),
+            norm(obj.get("is_refund")),
+            norm(obj.get("captured_amount")),
+            norm(obj.get("is_void")),
+            norm(obj.get("is_settled")),
+            norm(obj.get("bill_balanced")),
+            norm(obj.get("is_bill")),
+            norm(obj.get("discount_details")),
+            norm(obj.get("data", {}).get("message")),
+            norm(obj.get("acq_response_code")),
+            norm(obj.get("txn_response_code")),
+            norm(obj.get("updated_at")), 
+        ]
+        
+        data_string = ''.join(fields)
+
+        calculated_hmac = hmac.new(
+            PAYMOB_HMAC_SECRET.encode("utf-8"),
+            data_string.encode("utf-8"),
             hashlib.sha512
-        ).hexdigest()
+        ).hexdigest().lower()
 
-        if hashed_string != data.get('hmac'):
-            print("HMAC verification failed!")
+        print(f"DEBUG webhook calc_hmac={calculated_hmac}")
+        print(f"DEBUG webhook recv_hmac={received_hmac}")
+
+        if not hmac.compare_digest(calculated_hmac, received_hmac):
+            print("❌ HMAC verification failed!")
             return jsonify({"status": "HMAC verification failed"}), 403
 
-        print("HMAC verification successful.")
+        print("✅ HMAC verification successful.")
 
-        # Extract relevant information
-        transaction_status_paymob = "Paid" if obj.get('success') else "Failed"
-        paymob_transaction_id = obj.get('id')
-        merchant_order_id = obj.get('order', {}).get('merchant_order_id') # Your internal order ID from Paymob
+        # Update DB
+        transaction_status = "Paid" if obj.get("success") else "Failed"
+        paymob_transaction_id = obj.get("id")
+        merchant_order_id = obj.get("order", {}).get("merchant_order_id")
 
-        # Update your internal order database (SQLite)
-        if merchant_order_id: # Ensure we have our internal order ID
-            try:
-                with sqlite3.connect('store.db') as conn:
-                    c = conn.cursor()
-                    c.execute("UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ?",
-                              (transaction_status_paymob, paymob_transaction_id, merchant_order_id))
-                    conn.commit()
-                print(f"Order {merchant_order_id} updated to status: {transaction_status_paymob} in DB.")
+        if not merchant_order_id:
+            print("❌ Missing merchant_order_id in webhook payload.")
+            return jsonify({"status": "error", "message": "Missing merchant_order_id"}), 400
 
-                # Optional: Send email confirmation for Paymob payments
-                # Fetch order details to send a proper email
-                c.execute("SELECT email, name, total_price FROM orders WHERE id = ?", (merchant_order_id,))
-                order_row = c.fetchone()
-                if order_row:
-                    customer_email, customer_name, total_price = order_row
-                    if transaction_status_paymob == "Paid":
+        local_order_id = merchant_order_id.split('-', 1)[0] if '-' in merchant_order_id else merchant_order_id
+
+        try:
+            with sqlite3.connect("store.db") as conn:
+                c = conn.cursor()
+                c.execute(
+                    "UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ?",
+                    (transaction_status, paymob_transaction_id, local_order_id)
+                )
+                conn.commit()
+                print(f"✅ Order {local_order_id} updated to {transaction_status}.")
+
+                c.execute("SELECT email, name, total_price FROM orders WHERE id = ?", (local_order_id,))
+                row = c.fetchone()
+                if row:
+                    customer_email, customer_name, total_price = row
+                    if transaction_status == "Paid":
                         send_order_email(
                             customer_email,
                             "Metro Nary – Your Payment Was Successful!",
                             f"""
                             <h2 style='color:#10B981;'>Payment Confirmed!</h2>
-                            <p>Dear {customer_name}, your payment of EGP {total_price} for order #{merchant_order_id} was successful.</p>
+                            <p>Dear {customer_name}, your payment of EGP {total_price} for order #{local_order_id} was successful.</p>
                             <p>Paymob Transaction ID: {paymob_transaction_id}</p>
                             <p>Your order is now being processed.</p>
                             """
@@ -972,172 +1099,191 @@ def paymob_webhook():
                             "Metro Nary – Payment Failed",
                             f"""
                             <h2 style='color:#ff0000;'>Payment Failed</h2>
-                            <p>Dear {customer_name}, your payment for order #{merchant_order_id} of EGP {total_price} failed.</p>
-                            <p>Reason: {obj.get('data', {}).get('message', 'N/A')}</p>
+                            <p>Dear {customer_name}, your payment for order #{local_order_id} of EGP {total_price} failed.</p>
                             <p>Please try again or contact support if you continue to experience issues.</p>
                             """
                         )
-
-            except sqlite3.Error as e:
-                print(f"Database error when updating order status from webhook: {e}")
-                # Return a 500 status to Paymob to indicate an issue on your end
-                return jsonify({"status": "error", "message": "Database update failed"}), 500
-        else:
-            print(f"Merchant Order ID not found in webhook data: {merchant_order_id}")
-            # If merchant_order_id is missing, it's a critical error for tracking
-            return jsonify({"status": "error", "message": "Missing merchant_order_id in webhook"}), 400
+        except sqlite3.Error as e:
+            print(f"❌ Database error: {e}")
+            return jsonify({"status": "error", "message": "Database update failed"}), 500
 
         return jsonify({"status": "success"}), 200
 
     except Exception as e:
-        print(f"Error processing webhook: {e}")
+        print(f"❌ Error processing webhook: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route('/payment_status', methods=['GET'])
 def payment_status():
-    paymob_response = request.args.to_dict()
+    paymob_response = request.args.to_dict(flat=False)  # keep all values
     print(f"DEBUG: payment_status: Callback received. Args: {paymob_response}")
 
-    merchant_order_id = paymob_response.get('merchant_order_id')
-    paymob_transaction_id = paymob_response.get('paymob_transaction_id') # Get this from the URL args
+    # Keep the full merchant_order_id for the UI, but extract the local numeric id for DB
+    merchant_order_id = paymob_response.get('merchant_order_id', [''])[0]
+    local_order_id = merchant_order_id.split('-', 1)[0] if '-' in merchant_order_id else merchant_order_id
 
-    # Determine if this is a Cash on Delivery order based on the transaction ID
+    paymob_transaction_id = paymob_response.get('id', [''])[0]
+    integration_id = paymob_response.get('integration_id', [''])[0]
+
+    # Cash on Delivery?
     is_cash_on_delivery = (paymob_transaction_id == 'N/A (Cash)')
 
-    # --- 1. HMAC Verification (CRITICAL SECURITY STEP) ---
-    # Skip HMAC verification if it's a Cash on Delivery order
     if not is_cash_on_delivery:
-        hmac_param_names = [
-            'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
-            'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
-            'is_standalone_payment', 'is_voided', 'order', 'owner', 'pending', 'profile_id',
-            'refunded_amount_cents', 'success'
+        # ---- HMAC verification ----
+        def norm(v):
+            if v is None or v == '':
+                return ''
+            s = str(v)
+            if s in ['True', 'False']:
+                return s.lower()
+            return s
+
+        # Correct key order for Paymob redirect HMAC
+        ordered_keys = [
+           'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
+           'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
+           'is_standalone_payment', 'is_voided', 'order', 'owner', 'pending', 
+           'source_data.pan', 'source_data.sub_type', 'source_data.type', 'profile_id',
+           'refunded_amount_cents', 'merchant_commission', 'is_refund', 'captured_amount',
+           'is_void', 'is_settled', 'bill_balanced', 'is_bill',
+           'discount_details', 'data.message', 'acq_response_code', 'txn_response_code', 'updated_at'
         ]
 
-        hmac_data_elements = []
-        for param_name in hmac_param_names:
-            value = paymob_response.get(param_name, '')
-            if isinstance(value, str):
-                value = value.lower() if value in ['true', 'false'] else value
-            hmac_data_elements.append(str(value))
 
-        data_string = ''.join(hmac_data_elements)
-        print(f"DEBUG: payment_status: HMAC Data String: {data_string}")
+        # Helper to get nested source_data and order.id
+        def get_hmac_value(key):
+            if key.startswith('source_data.'):
+                subkey = key.split('.', 1)[1]
+                return norm(paymob_response.get(f'source_data.{subkey}', [''])[0])
+            if key == 'order':
+                # Paymob sends order id as 'order' query param (numeric)
+                return norm(paymob_response.get('order', [''])[0])
+            return norm(paymob_response.get(key, [''])[0])
 
-        hashed_hmac = hmac.new(
+        pieces = [get_hmac_value(k) for k in ordered_keys]
+        data_string = ''.join(pieces)
+
+        calc_hmac = hmac.new(
             PAYMOB_HMAC_SECRET.encode('utf-8'),
             data_string.encode('utf-8'),
             hashlib.sha512
-        ).hexdigest()
+        ).hexdigest().lower()
 
-        received_hmac = paymob_response.get('hmac')
-        print(f"DEBUG: payment_status: Calculated HMAC: {hashed_hmac}")
-        print(f"DEBUG: payment_status: Received HMAC: {received_hmac}")
+        recv_hmac = paymob_response.get('hmac', [''])[0].lower()
 
-        if hashed_hmac != received_hmac:
-            print(f"ERROR: payment_status: HMAC Mismatch! Calculated: {hashed_hmac}, Received: {received_hmac}")
-            return render_template('thankyou.html', success=False, message="Payment verification failed (HMAC mismatch). Please contact support.", name="Customer", merchant_order_id=merchant_order_id, db_status="HMAC Mismatch")
+        print(f"DEBUG: payment_status HMAC data_string={data_string}")
+        print(f"DEBUG: payment_status calc_hmac={calc_hmac}")
+        print(f"DEBUG: payment_status recv_hmac={recv_hmac}")
+
+        if not hmac.compare_digest(calc_hmac, recv_hmac):
+            print("ERROR: payment_status: HMAC Mismatch!")
+            return render_template(
+                'thankyou.html',
+                success=False,
+                message="Payment verification failed (HMAC mismatch). Please contact support.",
+                name="Customer",
+                merchant_order_id=merchant_order_id,
+                db_status="HMAC Mismatch"
+            )
         print("DEBUG: payment_status: HMAC verification successful.")
     else:
-        print("DEBUG: payment_status: Skipping HMAC verification for Cash on Delivery order.")
+        print("DEBUG: payment_status: Skipping HMAC verification for COD order.")
 
-
-    # --- 2. Process Payment Status ---
-    paymob_success = paymob_response.get('success') == 'true'
-    paymob_message = paymob_response.get('data.message', 'No specific message provided.')
-    paymob_pending = paymob_response.get('pending') == 'true'
+    # ---- Extract status flags ----
+    paymob_success = paymob_response.get('success', ['false'])[0] == 'true'
+    paymob_pending = paymob_response.get('pending', ['false'])[0] == 'true'
+    paymob_message = paymob_response.get('data.message', [''])[0] or paymob_response.get('message', [''])[0]
 
     db_status = 'Failed'
     message_to_user = "Your payment could not be processed."
     customer_name = "Customer"
     customer_email = "N/A"
 
-    print(f"DEBUG: payment_status: Processing order ID: {merchant_order_id}, Success: {paymob_success}, Pending: {paymob_pending}, Is COD: {is_cash_on_delivery}")
+    print(f"DEBUG: Processing order merchant_order_id={merchant_order_id} (local {local_order_id}) "
+          f"| Success: {paymob_success} | Pending: {paymob_pending} | COD: {is_cash_on_delivery}")
 
-    if merchant_order_id:
+    if local_order_id:
         try:
             with sqlite3.connect('store.db') as conn:
                 c = conn.cursor()
-                current_order = c.execute("SELECT name, email, status FROM orders WHERE id = ?", (merchant_order_id,)).fetchone()
-                if current_order:
-                    customer_name = current_order[0]
-                    customer_email = current_order[1]
+                c.execute("SELECT name, email, status FROM orders WHERE id = ?", (local_order_id,))
+                row = c.fetchone()
+
+                if row:
+                    customer_name, customer_email, current_status = row
 
                     if is_cash_on_delivery:
                         db_status = 'Pending Cash'
                         message_to_user = "Your Cash on Delivery order has been placed successfully!"
-                        # For COD, we don't need to update transaction_id as it's 'N/A (Cash)'
-                        # And status is already 'Pending Cash' from complete_checkout
-                        # We only update if status is not already 'Pending Cash' to avoid redundant updates
                         c.execute("UPDATE orders SET status = ? WHERE id = ? AND status != 'Pending Cash'",
-                                  (db_status, merchant_order_id))
+                                  (db_status, local_order_id))
                         conn.commit()
-                        print(f"DEBUG: payment_status: COD Order {merchant_order_id} confirmed in DB.")
-                        # Email for COD is sent from complete_checkout, no need to send again here.
+
                     elif paymob_success and not paymob_pending:
                         db_status = 'Paid'
                         message_to_user = "Your payment was successful!"
-                        print(f"DEBUG: payment_status: Order {merchant_order_id} status will be set to PAID.")
-                        c.execute("UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ? AND status != 'Paid'",
-                                  (db_status, paymob_transaction_id, merchant_order_id))
+                        c.execute("UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ?",
+                                  (db_status, paymob_transaction_id, local_order_id))
                         conn.commit()
-                        print(f"DEBUG: payment_status: Order {merchant_order_id} updated in DB.")
-                        email_subject = f"Order #{merchant_order_id} Confirmed - Metro Nary"
+
+                        # Fresh order next time
+                        session.pop('current_order_id', None)
+
+                        method = "Card" if str(integration_id) == str(PAYMOB_CARD_INTEGRATION_ID) else "Wallet"
+                        email_subject = f"Order #{local_order_id} Confirmed - Metro Nary"
                         email_content = f"""
                         <h1>Thank You for Your Order, {customer_name}!</h1>
-                        <p>Your order #{merchant_order_id} has been successfully placed and paid for.</p>
+                        <p>Your order #{local_order_id} has been successfully paid.</p>
                         <p>Transaction ID: {paymob_transaction_id}</p>
+                        <p>Payment Method: {method}</p>
                         <p>We will process your order shortly.</p>
                         <p>Visit your order history: <a href="https://metronary.store/order_history">Order History</a></p>
                         """
                         send_order_email(customer_email, email_subject, email_content)
-                        print(f"DEBUG: payment_status: Email sent for order {merchant_order_id}.")
+
                     elif paymob_pending:
                         db_status = 'Pending Paymob'
-                        message_to_user = f"Your payment is pending: {paymob_message}. Please complete any required steps."
-                        print(f"DEBUG: payment_status: Order {merchant_order_id} status will be set to PENDING PAYMOB.")
-                        c.execute("UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ? AND status != 'Paid'",
-                                  (db_status, paymob_transaction_id, merchant_order_id))
+                        message_to_user = f"Your payment is pending: {paymob_message}."
+                        c.execute("UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ?",
+                                  (db_status, paymob_transaction_id, local_order_id))
                         conn.commit()
-                        print(f"DEBUG: payment_status: Order {merchant_order_id} updated in DB.")
-                    else: # Payment failed
+                    else:
                         db_status = 'Failed'
                         message_to_user = f"Your payment failed: {paymob_message}. Please try again."
-                        print(f"DEBUG: payment_status: Order {merchant_order_id} status will be set to FAILED.")
-                        c.execute("UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ? AND status != 'Paid'",
-                                  (db_status, paymob_transaction_id, merchant_order_id))
+                        c.execute("UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ?",
+                                  (db_status, paymob_transaction_id, local_order_id))
                         conn.commit()
-                        print(f"DEBUG: payment_status: Order {merchant_order_id} updated in DB.")
                 else:
-                    message_to_user = "Payment status received, but order not found in our system."
                     db_status = "Order Not Found"
-                    print(f"ERROR: payment_status: Order ID {merchant_order_id} not found in DB.")
+                    message_to_user = "Payment received but order not found in system."
+                    print(f"ERROR: Order {local_order_id} not found.")
 
         except sqlite3.Error as e:
-            print(f"ERROR: payment_status: Database error during processing: {e}")
             db_status = "DB Error"
-            message_to_user = "An internal database error occurred while processing your payment status."
+            message_to_user = "Database error while processing payment."
+            print(f"ERROR: DB issue {e}")
         except Exception as e:
-            print(f"ERROR: payment_status: An unexpected error occurred: {e}")
             db_status = "Server Error"
-            message_to_user = "An internal server error occurred while processing your payment status."
+            message_to_user = "Internal server error while processing payment."
+            print(f"ERROR: Unexpected issue {e}")
     else:
-        message_to_user = "Payment status received, but no merchant order ID was provided."
         db_status = "No Order ID"
-        print("ERROR: payment_status: No merchant_order_id provided in callback.")
+        message_to_user = "Payment callback received but no order ID found."
+        print("ERROR: No merchant_order_id in callback or could not parse local id.")
 
-    print(f"DEBUG: payment_status: Preparing to render thankyou.html with success={paymob_success and not paymob_pending}, message='{message_to_user}', name='{customer_name}', merchant_order_id='{merchant_order_id}', paymob_transaction_id='{paymob_transaction_id}', db_status='{db_status}'")
+    return render_template(
+        'thankyou.html',
+        success=(paymob_success and not paymob_pending) or is_cash_on_delivery,
+        message=message_to_user,
+        name=customer_name,
+        merchant_order_id=merchant_order_id,        
+        paymob_transaction_id=paymob_transaction_id,
+        db_status=db_status
+    )
 
-    # Render the thankyou.html template
-    return render_template('thankyou.html',
-                           success=(paymob_success and not paymob_pending) or is_cash_on_delivery, # COD is always 'success' for display
-                           message=message_to_user,
-                           name=customer_name,
-                           merchant_order_id=merchant_order_id,
-                           paymob_transaction_id=paymob_transaction_id,
-                           db_status=db_status
-                          )
+
+
 
 @app.route('/complete_checkout', methods=['POST'])
 def complete_checkout():

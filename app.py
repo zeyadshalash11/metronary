@@ -695,7 +695,7 @@ def create_payment():
     if not cart_items_for_db:
         return jsonify({"error": "No valid items in cart to process."}), 400
 
-    shipping_cost = 70 if governorate.strip().lower() == 'cairo' else 120
+    shipping_cost = 70 if governorate.strip().lower() in ['cairo', 'giza'] else 140
     order_id = None
     try:
         with sqlite3.connect('store.db') as conn:
@@ -1603,9 +1603,28 @@ def update_order_status(order_id):
     conn.close()
     return redirect(url_for('admin'))
 
+@app.route('/update/<int:product_id>', methods=['POST'])
+def update_product(product_id):
+    new_name = request.form['name']
+    new_price = request.form['price']
+    new_desc = request.form['description']
+
+    conn = sqlite3.connect('store.db')
+    c = conn.cursor()
+    c.execute('''
+        UPDATE products 
+        SET name=?, price=?, description=? 
+        WHERE id=?
+    ''', (new_name, new_price, new_desc, product_id))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('admin'))
+
 @app.route('/delete/<int:product_id>', methods=['POST'])
 def delete_product(product_id):
     conn = sqlite3.connect('store.db')
+    conn.execute("PRAGMA foreign_keys = ON")
     c = conn.cursor()
     c.execute('DELETE FROM products WHERE id=?', (product_id,))
     conn.commit()

@@ -312,7 +312,9 @@
                     {% endfor %}
                 </div>
 
-                <div class="product-description">{{ product.description }}</div>
+                <div class="product-description" style="white-space: pre-line;">
+                    {{ product.description }}
+                </div>
 
                 <div class="action-buttons">
                     <form id="add-to-cart-form" onsubmit="addToCart(event)">

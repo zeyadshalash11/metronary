@@ -1,7 +1,9 @@
 import sqlite3
 
 def create_orders_table():
-    conn = sqlite3.connect('store.db') # Unified to 'store.db'
+    conn = sqlite3.connect('store.db') 
+    conn.execute("PRAGMA foreign_keys = ON")
+
     conn.row_factory = sqlite3.Row  # Enables name-based access
     c = conn.cursor()
 
@@ -55,6 +57,8 @@ def create_orders_table():
 # Add this NEW function to your database.py file:
 def create_order_items_table():
     conn = sqlite3.connect('store.db')
+    conn.execute("PRAGMA foreign_keys = ON")
+
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute('''
@@ -67,6 +71,7 @@ def create_order_items_table():
             quantity INTEGER NOT NULL,
             price REAL NOT NULL,
             FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE
+            FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
         )
     ''')
     conn.commit()
@@ -74,6 +79,8 @@ def create_order_items_table():
 
 def create_products_table():
         conn = sqlite3.connect('store.db')
+        conn.execute("PRAGMA foreign_keys = ON")
+
         c = conn.cursor()
         c.execute('''
             CREATE TABLE IF NOT EXISTS products (
@@ -90,6 +97,7 @@ def create_products_table():
 
 def create_faqs_table():
     conn = sqlite3.connect('store.db') # Unified to 'store.db'
+    conn.execute("PRAGMA foreign_keys = ON")    
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS faqs (

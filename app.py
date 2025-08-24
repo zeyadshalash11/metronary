@@ -1039,7 +1039,7 @@ def paymob_webhook():
             norm(obj.get("txn_response_code")),
             norm(obj.get("updated_at")), 
         ]
-        
+
         data_string = ''.join(fields)
 
         calculated_hmac = hmac.new(
@@ -1143,12 +1143,12 @@ def payment_status():
         ordered_keys = [
            'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
            'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
-           'is_standalone_payment', 'is_voided', 'order', 'owner', 'pending', 
+           'is_standalone_payment', 'is_voided', 'order', 'owner', 'pending',
            'source_data.pan', 'source_data.sub_type', 'source_data.type', 'profile_id',
-           'refunded_amount_cents', 'merchant_commission', 'is_refund', 'captured_amount',
-           'is_void', 'is_settled', 'bill_balanced', 'is_bill',
-           'discount_details', 'data.message', 'acq_response_code', 'txn_response_code', 'updated_at'
+           'refunded_amount_cents', 'merchant_commission', 'discount_details', 
+           'is_refund', 'captured_amount', 'is_void', 'is_settled', 'bill_balanced', 'is_bill'
         ]
+
 
 
         # Helper to get nested source_data and order.id

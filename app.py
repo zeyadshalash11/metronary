@@ -1017,6 +1017,7 @@ def paymob_webhook():
         data = request.get_json()
         received_hmac = request.args.get('hmac')
 
+
         print(f"Received Paymob Webhook Data: {json.dumps(data, indent=2)}")
         print(f"Received HMAC from URL: {received_hmac}")
 
@@ -1029,20 +1030,22 @@ def paymob_webhook():
         # These are the CORRECT keys from the 'obj' dictionary in ALPHABETICAL order
         # as required by Paymob documentation for the Transaction Processed Callback.
         hmac_keys = [
-            'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
-            'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
-            'is_standalone_payment', 'is_voided', 'order', 'owner', 'pending',
-            'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success'
+           'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
+           'obj.id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
+           'is_standalone_payment', 'is_voided', 'order.id', 'owner', 'pending',
+           'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success'
         ]
+
+ 
 
         concatenated_string = ""
         for key in hmac_keys:
             value = None
-            if key == 'order':
-                # Special handling for nested 'order' object -> get its 'id'
-                value = obj.get('order', {}).get('id')
+            if key == 'obj.id':
+               value = obj.get('id')
+            elif key == 'order.id':
+               value = obj.get('order', {}).get('id')
             elif key.startswith('source_data.'):
-                # Special handling for nested 'source_data' object
                 sub_key = key.split('.')[1]
                 value = obj.get('source_data', {}).get(sub_key)
             else:
@@ -1143,17 +1146,27 @@ def payment_status():
         hmac_keys = [
             'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
             'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
-            'is_standalone_payment', 'is_voided', 'order', 'owner', 'pending',
-            'source_data_pan', 'source_data_sub_type', 'source_data_type', 'success'
+            'is_standalone_payment', 'is_voided', 'order.id', 'owner', 'pending',
+            'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success'
         ]
+
 
         # 3. Concatenate the values from the response in that specific order
         concatenated_string = ""
         for key in hmac_keys:
-            value = params.get(key)
+            if key == 'order.id':
+                value = params.get('order.id')
+            elif key.startswith('source_data.'):
+                sub_key = key.split('.')[1]
+                value = params.get(f'source_data.{sub_key}')
+            else:
+                value = params.get(key)
+
+            
+            
             # Convert boolean values to lowercase strings "true" or "false"
-            if isinstance(value, str) and value in ['True', 'False']:
-                 concatenated_string += value.lower()
+            if value in ['true', 'false', True, False]:
+                concatenated_string += str(value).lower()
             elif value is not None:
                 concatenated_string += str(value)
 

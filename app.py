@@ -1013,113 +1013,108 @@ def create_payment():
 @app.route('/paymob_webhook', methods=['POST'])
 def paymob_webhook():
     try:
-        # 1. Get data from JSON body and HMAC from URL query parameters
+        # 1. Get JSON payload and HMAC
         data = request.get_json()
-        received_hmac = request.args.get('hmac')
-
+        received_hmac = data.get('hmac')  # Webhook sends HMAC in JSON body
 
         print(f"Received Paymob Webhook Data: {json.dumps(data, indent=2)}")
-        print(f"Received HMAC from URL: {received_hmac}")
+        print(f"Received HMAC: {received_hmac}")
 
         if not data or not received_hmac:
             return jsonify({"message": "Invalid callback data or missing HMAC"}), 400
 
-        # 2. Construct the string to be hashed from the JSON payload's 'obj'
+        # 2. Extract 'obj' from JSON
         obj = data.get('obj', {})
-        
-        # These are the CORRECT keys from the 'obj' dictionary in ALPHABETICAL order
-        # as required by Paymob documentation for the Transaction Processed Callback.
+
+        # 3. HMAC keys in exact order required by Paymob
         hmac_keys = [
-           'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
-           'obj.id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
-           'is_standalone_payment', 'is_voided', 'order.id', 'owner', 'pending',
-           'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success'
+            'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
+            'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
+            'is_standalone_payment', 'is_voided', 'order.id', 'owner', 'pending',
+            'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success'
         ]
 
- 
-
+        # 4. Build concatenated string for HMAC
         concatenated_string = ""
         for key in hmac_keys:
-            value = None
-            if key == 'obj.id':
-               value = obj.get('id')
-            elif key == 'order.id':
+            if key == 'order.id':
                value = obj.get('order', {}).get('id')
             elif key.startswith('source_data.'):
-                sub_key = key.split('.')[1]
-                value = obj.get('source_data', {}).get(sub_key)
+               sub_key = key.split('.')[1]
+               value = obj.get('source_data', {}).get(sub_key)
             else:
                 value = obj.get(key)
-            
-            # Convert boolean and None values to lowercase strings "true", "false"
-            # This is a critical step.
+
             if isinstance(value, bool):
                 concatenated_string += str(value).lower()
             elif value is not None:
                 concatenated_string += str(value)
 
-        # 3. Calculate your own HMAC using your secret
+        # 5. Calculate HMAC
         secret_bytes = PAYMOB_HMAC_SECRET.encode('utf-8')
         string_bytes = concatenated_string.encode('utf-8')
-        
         calculated_hmac = hmac.new(secret_bytes, string_bytes, hashlib.sha512).hexdigest()
 
         print(f"String used for HMAC: '{concatenated_string}'")
         print(f"Calculated HMAC: {calculated_hmac}")
-        print(f"Received HMAC  : {received_hmac}")
 
-        # 4. Compare the HMACs securely
+        # 6. Verify HMAC
         if not hmac.compare_digest(calculated_hmac, received_hmac):
             print("❌ HMAC verification failed!")
             return jsonify({"status": "HMAC verification failed"}), 403
 
         print("✅ HMAC verification successful.")
-
-        # --- Your existing logic (which is good) ---
-        transaction_status = "Paid" if obj.get("success") else "Failed"
+    
+    
+        # 7. Extract order info
+        success = obj.get("success")
+        if isinstance(success, str):
+           success = success.lower() == "true"
+        transaction_status = "Paid" if success else "Failed"
         paymob_transaction_id = obj.get("id")
-        
-        # IMPORTANT: Use the paymob_order_id from the webhook to find your local order
         paymob_order_id = obj.get("order", {}).get("id")
-        if not paymob_order_id:
-            print("❌ Missing paymob_order_id in webhook payload.")
-            return jsonify({"status": "error", "message": "Missing paymob_order_id"}), 400
+        billing_data = obj.get("data", {}).get("billing_data", {}) or obj.get("billing_data", {})
+        customer_email = billing_data.get("email", "")
+        customer_name = billing_data.get("first_name", "Valued Customer")
 
-        try:
-            with sqlite3.connect("store.db") as conn:
-                c = conn.cursor()
-                
-                # Find the local order using the paymob_order_id
-                c.execute("SELECT id FROM orders WHERE paymob_order_id = ?", (paymob_order_id,))
-                order_row = c.fetchone()
-                if not order_row:
-                    print(f"❌ Could not find a local order with paymob_order_id {paymob_order_id}")
-                    return jsonify({"status": "error", "message": "Order not found"}), 404
-                
+        total_price = int(obj.get("amount_cents", 0)) / 100
+
+        with sqlite3.connect("store.db") as conn:
+            c = conn.cursor()
+
+            # 8. Check if local order exists
+            c.execute("SELECT id FROM orders WHERE paymob_order_id = ?", (paymob_order_id,))
+            order_row = c.fetchone()
+
+            if order_row:
                 local_order_id = order_row[0]
-
+                # Update existing order
                 c.execute(
                     "UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ?",
                     (transaction_status, paymob_transaction_id, local_order_id)
                 )
-                conn.commit()
                 print(f"✅ Order {local_order_id} updated to {transaction_status}.")
+            else:
+                # Create new order for wallet/COD
+                c.execute(
+                    "INSERT INTO orders (paymob_order_id, status, paymob_transaction_id, name, email, total_price) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (paymob_order_id, transaction_status, paymob_transaction_id, customer_name, customer_email, total_price)
+                )
+                local_order_id = c.lastrowid
+                print(f"✅ New order {local_order_id} created with status {transaction_status}.")
 
-                # Fetch details for email
-                c.execute("SELECT email, name, total_price FROM orders WHERE id = ?", (local_order_id,))
-                row = c.fetchone()
-                if row:
-                    customer_email, customer_name, total_price = row
-                    if transaction_status == "Paid":
-                        # Your successful payment email logic here...
-                        print(f"Sending 'Paid' email to {customer_email}")
-                    else:
-                        # Your failed payment email logic here...
-                        print(f"Sending 'Failed' email to {customer_email}")
-        
-        except sqlite3.Error as e:
-            print(f"❌ Database error: {e}")
-            return jsonify({"status": "error", "message": "Database update failed"}), 500
+            conn.commit()
+
+        # 9. Send email confirmation
+        try:
+            if transaction_status == "Paid":
+                # Call your actual email function here
+                print(f"📧 Sending 'Paid' email to {customer_email}")
+            else:
+                print(f"📧 Sending 'Failed' email to {customer_email}")
+        except Exception as e:
+            print(f"❌ Email sending failed: {e}")
 
         return jsonify({"status": "success"}), 200
 
@@ -1128,7 +1123,6 @@ def paymob_webhook():
         import traceback
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
-
 
 
 @app.route('/payment_status', methods=['GET'])
@@ -1140,31 +1134,51 @@ def payment_status():
 
         received_hmac = params.get('hmac')
         
+        if not received_hmac:
+            print("💡 No HMAC detected: treating as Cash on Delivery")
+            merchant_order_id = params.get('merchant_order_id')
+            local_order_id = merchant_order_id or str(int(time.time()))
+            final_status = "Pending COD"
+            user_message = "Your order has been placed and will be collected on delivery."
+            customer_name = params.get('billing_name', 'Valued Customer')
+            customer_email = params.get('billing_email', '')
+            total_price = int(params.get('amount_cents', 0)) / 100
+
+            with sqlite3.connect('store.db') as conn:
+                c = conn.cursor()
+                c.execute("SELECT id FROM orders WHERE id = ?", (local_order_id,))
+                order_row = c.fetchone()
+                if not order_row:
+                  c.execute(
+                     "INSERT INTO orders (id, status, name, email, total_price) VALUES (?, ?, ?, ?, ?)",
+                     (local_order_id, final_status, customer_name, customer_email, total_price)
+                    )
+                conn.commit()
+
+            return render_template(
+                  'thankyou.html',
+                  success=True,
+                  message=user_message,
+                  name=customer_name,
+                  merchant_order_id=local_order_id
+                )
+        
         # --- HMAC VERIFICATION FOR PROCESSED CALLBACK ---
         
         # 2. Define the exact keys in the exact order required by Paymob
         hmac_keys = [
-            'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
-            'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
-            'is_standalone_payment', 'is_voided', 'order.id', 'owner', 'pending',
-            'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success'
+         'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
+         'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
+         'is_standalone_payment', 'is_voided', 'order.id', 'owner', 'pending',
+         'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success'
         ]
+
 
 
         # 3. Concatenate the values from the response in that specific order
         concatenated_string = ""
         for key in hmac_keys:
-            if key == 'order.id':
-                value = params.get('order.id')
-            elif key.startswith('source_data.'):
-                sub_key = key.split('.')[1]
-                value = params.get(f'source_data.{sub_key}')
-            else:
-                value = params.get(key)
-
-            
-            
-            # Convert boolean values to lowercase strings "true" or "false"
+            value = params.get(key)
             if value in ['true', 'false', True, False]:
                 concatenated_string += str(value).lower()
             elif value is not None:
@@ -1191,39 +1205,61 @@ def payment_status():
         # Now that HMAC is verified, we can trust the parameters
         is_successful = params.get('success') == 'true'
         is_pending = params.get('pending') == 'true'
-        paymob_message = params.get('data.message') or "Transaction processed."
+        paymob_message =params.get('message') or "Transaction processed."
         merchant_order_id = params.get('merchant_order_id')
         paymob_transaction_id = params.get('id')
+        local_order_id = merchant_order_id
 
-        local_order_id = merchant_order_id.split('-')[0] if merchant_order_id else None
+        
         
         if not local_order_id:
             return render_template('thankyou.html', success=False, message="Could not identify your order. Please contact support.")
 
-        final_status = ""
-        user_message = ""
+        final_status = "Paid" if is_successful else "Failed"
+        user_message = "Your payment was successful!" if is_successful else f"Your payment failed. Reason: {paymob_message}"
+
         customer_name = "Valued Customer"
 
         with sqlite3.connect('store.db') as conn:
             c = conn.cursor()
-            c.execute("SELECT name FROM orders WHERE id = ?", (local_order_id,))
-            row = c.fetchone()
-            if row:
-                customer_name = row[0]
+            c.execute("SELECT id FROM orders WHERE id = ?", (local_order_id,))
+            order_row = c.fetchone()
 
-            if is_successful:
-                final_status = "Paid"
-                user_message = "Your payment was successful! Your order is confirmed."
-                # The webhook should handle the primary update, but we can update here as a backup.
-                c.execute("UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ?",
-                          (final_status, paymob_transaction_id, local_order_id))
-                session.pop('current_order_id', None) # Clear the order from session on success
+            if order_row:
+               # Fetch name and email from DB
+                c.execute("SELECT name, email FROM orders WHERE id = ?", (local_order_id,))
+                row = c.fetchone()
+                if row:
+                  customer_name, customer_email = row
+                else:
+                  # fallback if DB row missing
+                  customer_name = "Valued Customer"
+                  customer_email = params.get('billing_email', '')
+                
+                c.execute(
+                 "UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ?",
+                 (final_status, paymob_transaction_id, local_order_id)
+                )
             else:
-                final_status = "Failed"
-                user_message = f"Your payment failed. Reason: {paymob_message}. Please try again."
-                c.execute("UPDATE orders SET status = ?, paymob_transaction_id = ? WHERE id = ?",
-                          (final_status, paymob_transaction_id, local_order_id))
-            conn.commit()
+              # Create order if missing
+              customer_name = params.get('billing_name', 'Valued Customer')
+              customer_email = params.get('billing_email', '')
+              total_price = int(params.get('amount_cents', 0)) / 100
+              c.execute(
+                 "INSERT INTO orders (id, status, paymob_transaction_id, name, email, total_price) "
+                 "VALUES (?, ?, ?, ?, ?, ?)",
+                 (local_order_id, final_status, paymob_transaction_id, customer_name, customer_email, total_price)
+                )
+            conn.commit()    
+            
+        if customer_email:  # only send or print if email exists
+            if final_status == "Paid":
+             print(f"📧 Sending 'Paid' email to {customer_email}")
+            else:
+               print(f"📧 Sending 'Failed' email to {customer_email}")
+        else:
+           print("⚠️ No customer email available, cannot send email.")
+
 
         return render_template(
             'thankyou.html',
